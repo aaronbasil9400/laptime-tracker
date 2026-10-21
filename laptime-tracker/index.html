@@ -1,0 +1,2272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="Personal lap time tracker for Le Mans Ultimate and Assetto Corsa Competizione.">
+<title>Lap Times — LMU · ACC</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 22'%3E%3Crect width='22' height='22' fill='%230C0E11'/%3E%3Cpath d='M3 18V5l8 7.4 8-7.4v13' fill='none' stroke='%23B57BFF' stroke-width='1.8'/%3E%3C/svg%3E">
+<style>
+/* ============================================================
+   TOKENS
+   ============================================================ */
+:root{
+  --ground:#0B0D10;
+  --plate:#111418;
+  --plate-2:#161A1F;
+  --plate-3:#1C2128;
+  --rule:#232930;
+  --rule-2:#2E353E;
+  --rule-3:#3B444F;
+
+  --ink:#EAEDF0;
+  --ink-2:#A7B0BA;
+  --ink-3:#868F9C;
+  --ink-4:#8B94A0;
+
+  --purple:#B57BFF;
+  --green:#3FDD8C;
+  --amber:#FFB020;
+  --red:#FF5A5F;
+
+  --font-ui:"Bahnschrift","DIN Alternate","Roboto Condensed","Segoe UI",system-ui,sans-serif;
+  --font-mono:"Cascadia Mono","Cascadia Code",Consolas,"SF Mono","Roboto Mono",ui-monospace,monospace;
+
+  --r:2px;
+  --rail-w:232px;
+  --tap:44px;
+
+  --t-step:90ms;
+  --t-quick:140ms;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--ground);
+  color:var(--ink);
+  font-family:var(--font-ui);
+  font-size:14px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0}
+a{color:inherit}
+h1,h2,h3,h4,p,dl,dd,dt,ul,ol,figure{margin:0;padding:0}
+ul,ol{list-style:none}
+::selection{background:rgba(181,123,255,.3);color:#fff}
+:focus-visible{outline:2px solid var(--purple);outline-offset:2px}
+
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+/* ============================================================
+   APP SHELL
+   ============================================================ */
+.app{position:relative;display:flex;flex-direction:column;min-height:100vh}
+
+/* ---- Masthead ---- */
+.masthead{
+  position:sticky;top:0;z-index:40;
+  display:flex;align-items:stretch;
+  background:rgba(11,13,16,.95);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--rule-2);
+}
+.tb-brand{
+  display:flex;align-items:center;gap:11px;
+  padding:0 15px;height:58px;flex:0 0 auto;
+  border-right:1px solid var(--rule);
+}
+.tb-mark{width:22px;height:22px;flex:0 0 auto;display:block}
+.tb-title{display:flex;flex-direction:column;gap:1px;min-width:0}
+.tb-title h1{
+  font-size:16px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;
+  line-height:1.1;white-space:nowrap;
+}
+.tb-title span{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3);font-weight:600;white-space:nowrap}
+.tb-meta{display:none;flex:1 1 auto;align-items:stretch;min-width:0;overflow:hidden}
+.tb-cell{
+  display:flex;flex-direction:column;justify-content:center;gap:1px;
+  padding:0 15px;border-right:1px solid var(--rule);min-width:0;
+}
+.tb-cell dt{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-4);font-weight:600;white-space:nowrap}
+.tb-cell dd{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;line-height:1.2}
+.tb-cell dd.is-purple{color:var(--purple)}
+.tb-spacer{flex:1 1 auto}
+.tb-status{
+  display:none;align-items:center;gap:7px;padding:0 15px;
+  font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-4);font-weight:600;
+}
+.tb-status i{width:5px;height:5px;background:var(--green);display:block;flex:0 0 auto}
+
+/* ---- Rail ---- */
+.rail{
+  position:fixed;left:0;right:0;bottom:0;z-index:50;
+  display:grid;grid-auto-flow:column;grid-auto-columns:1fr;
+  background:rgba(13,16,19,.97);
+  backdrop-filter:blur(16px);
+  border-top:1px solid var(--rule-2);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.rail-item{
+  position:relative;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  padding:10px 4px 11px;min-height:58px;
+  border-top:2px solid transparent;
+  color:var(--ink-3);
+  transition:color var(--t-step) linear;
+}
+.rail-item .rail-no{font-size:11px;letter-spacing:.14em;font-weight:700;opacity:.75;font-family:var(--font-mono)}
+.rail-item .rail-label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700}
+.rail-item .rail-count{
+  position:absolute;top:7px;right:calc(50% - 27px);
+  font-family:var(--font-mono);font-size:11px;font-weight:700;line-height:1;
+  color:var(--ink-4);
+}
+.rail-item[aria-current="page"]{color:var(--ink);border-top-color:var(--purple)}
+.rail-item[aria-current="page"] .rail-no{color:var(--purple);opacity:1}
+.rail-item:hover{color:var(--ink-2)}
+.rail-foot{display:none}
+
+/* ---- Main ---- */
+main{
+  flex:1 1 auto;min-width:0;
+  padding:16px 14px calc(78px + env(safe-area-inset-bottom));
+}
+.view{display:none;flex-direction:column;gap:14px;max-width:1200px;margin:0 auto;width:100%}
+.view.is-active{display:flex}
+
+/* ---- View header ---- */
+.view-head{
+  display:flex;flex-direction:column;gap:3px;
+  padding:2px 0 4px;
+}
+.view-head h2{
+  font-size:24px;font-weight:700;letter-spacing:-.01em;line-height:1.1;color:var(--ink);
+}
+.view-head p{font-size:13px;color:var(--ink-3);line-height:1.5;max-width:56ch}
+
+/* ---- Plate ---- */
+.plate{
+  position:relative;
+  background:var(--plate);
+  border:1px solid var(--rule);
+  border-radius:var(--r);
+}
+.plate::before,.plate::after{
+  content:"";position:absolute;width:6px;height:6px;pointer-events:none;
+  border:1px solid var(--rule-3);
+}
+.plate::before{top:-1px;left:-1px;border-right:0;border-bottom:0}
+.plate::after{bottom:-1px;right:-1px;border-left:0;border-top:0}
+
+.plate-head{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 14px;border-bottom:1px solid var(--rule);
+  min-height:44px;
+}
+.plate-head h3{
+  font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-2);flex:1 1 auto;min-width:0;
+}
+.plate-head .head-note{
+  font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-4);
+  font-weight:600;white-space:nowrap;flex:0 0 auto;
+}
+.plate-body{padding:14px}
+
+/* ============================================================
+   FORM
+   ============================================================ */
+.form-grid{display:flex;flex-direction:column;gap:13px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field > label,.field-label{
+  font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  font-weight:600;color:var(--ink-3);
+}
+.field-hint{font-size:12px;line-height:1.55;color:var(--ink-3)}
+
+.inp{
+  appearance:none;-webkit-appearance:none;
+  width:100%;min-height:var(--tap);
+  padding:10px 12px;
+  background:var(--plate-2);
+  border:1px solid var(--rule-2);
+  border-radius:var(--r);
+  color:var(--ink);
+  font-size:15px;
+  transition:border-color var(--t-step) linear,background var(--t-step) linear;
+}
+.inp::placeholder{color:var(--ink-4)}
+.inp:hover{border-color:var(--rule-3)}
+.inp:focus{outline:none;border-color:var(--ink-2);background:var(--plate-3)}
+.inp.is-bad{border-color:var(--red)}
+select.inp{
+  cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23737C88' stroke-width='1.4'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;
+  padding-right:32px;
+  text-overflow:ellipsis;
+}
+select.inp option{background:#161A1F;color:var(--ink)}
+select.inp optgroup{background:#111418;color:var(--ink-3);font-size:12px}
+
+/* time field */
+.time-field{position:relative}
+.inp-time{
+  font-family:var(--font-mono);font-variant-numeric:tabular-nums;
+  font-size:32px;font-weight:600;letter-spacing:.01em;
+  padding:14px;min-height:72px;
+}
+.time-echo{
+  position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;
+  color:var(--ink-4);pointer-events:none;text-align:right;line-height:1.35;
+}
+.time-echo.is-ok{color:var(--green)}
+.time-echo.is-bad{color:var(--red)}
+.time-echo b{display:block;font-family:var(--font-mono);font-size:14px;letter-spacing:.01em;font-weight:600}
+
+/* segmented control */
+.seg{display:flex;background:var(--plate-2);border:1px solid var(--rule-2);border-radius:var(--r);overflow:hidden}
+.seg button{
+  flex:1 1 0;min-width:0;min-height:42px;padding:8px 6px;
+  font-size:12px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;
+  color:var(--ink-3);
+  border-right:1px solid var(--rule-2);
+  transition:color var(--t-step) linear,background var(--t-step) linear;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.seg button:last-child{border-right:0}
+.seg button:hover{color:var(--ink-2);background:var(--plate-3)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--ground)}
+
+/* buttons */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:var(--tap);padding:10px 16px;
+  border:1px solid var(--rule-2);border-radius:var(--r);
+  background:var(--plate-2);color:var(--ink-2);
+  font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;
+  transition:background var(--t-step) linear,color var(--t-step) linear,border-color var(--t-step) linear;
+  white-space:nowrap;
+}
+.btn:hover{color:var(--ink);border-color:var(--rule-3);background:var(--plate-3)}
+.btn-primary{background:var(--ink);border-color:var(--ink);color:var(--ground)}
+.btn-primary:hover{background:#fff;border-color:#fff;color:var(--ground)}
+.btn-danger:hover{border-color:var(--red);color:var(--red)}
+.btn-sm{min-height:36px;padding:6px 11px;font-size:11px}
+.btn-block{width:100%}
+
+.form-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.form-actions .btn-primary{flex:1 1 150px}
+
+.frow{display:grid;grid-template-columns:1fr;gap:13px}
+@media (min-width:560px){.frow{grid-template-columns:1fr 1fr}}
+
+/* ============================================================
+   LAP ROWS
+   ============================================================ */
+.lap-list{display:flex;flex-direction:column}
+.lap{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  grid-template-areas:"time meta actions" "detail detail detail";
+  gap:2px 12px;
+  padding:12px 14px;
+  border-top:1px solid var(--rule);
+  align-items:center;
+  transition:background var(--t-step) linear;
+}
+.lap:first-child{border-top:0}
+.lap:hover{background:var(--plate-2)}
+.lap-time{
+  grid-area:time;font-family:var(--font-mono);font-variant-numeric:tabular-nums;
+  font-size:18px;font-weight:600;color:var(--ink);line-height:1.2;
+}
+.lap-time.is-pb{color:var(--purple)}
+.lap-meta{grid-area:meta;min-width:0;display:flex;flex-direction:column;gap:1px}
+.lap-track{font-size:13px;font-weight:600;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
+.lap-car{font-size:12px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.35}
+.lap-detail{
+  grid-area:detail;display:flex;flex-wrap:wrap;gap:4px 10px;
+  font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-4);
+  font-weight:600;padding-top:4px;
+}
+.lap-detail span{white-space:nowrap}
+.lap-detail .tag{color:var(--ink-3)}
+.lap-detail .note{text-transform:none;letter-spacing:.01em;color:var(--ink-3);white-space:normal}
+.lap-actions{grid-area:actions;display:flex;gap:2px;flex:0 0 auto}
+.icon-btn{
+  width:40px;height:40px;display:grid;place-items:center;
+  border:1px solid transparent;border-radius:var(--r);color:var(--ink-4);
+  transition:color var(--t-step) linear,border-color var(--t-step) linear,background var(--t-step) linear;
+}
+.icon-btn:hover{color:var(--ink);border-color:var(--rule-2);background:var(--plate-3)}
+.icon-btn.danger:hover{color:var(--red);border-color:rgba(255,90,95,.4)}
+.icon-btn svg{width:15px;height:15px;display:block}
+@media (pointer:coarse){.icon-btn{width:var(--tap);height:var(--tap)}}
+
+/* ============================================================
+   TIMING VIEW
+   ============================================================ */
+.tgroup{border-top:1px solid var(--rule)}
+.tgroup:first-child{border-top:0}
+.tgroup-head{
+  display:flex;align-items:center;gap:10px;width:100%;
+  padding:13px 14px;text-align:left;
+  transition:background var(--t-step) linear;
+}
+.tgroup-head:hover{background:var(--plate-2)}
+.tgroup-name{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
+.tgroup-name strong{font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
+.tgroup-name em{font-style:normal;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-4);font-weight:600}
+.tgroup-best{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:16px;font-weight:600;color:var(--purple);flex:0 0 auto}
+.tgroup-chev{flex:0 0 auto;width:15px;height:15px;color:var(--ink-4);transition:transform var(--t-quick) linear}
+.tgroup-head[aria-expanded="true"] .tgroup-chev{transform:rotate(90deg)}
+.tgroup-body{border-top:1px solid var(--rule);background:var(--plate-2);display:none}
+.tgroup-body.is-open{display:block}
+.trow{
+  display:grid;grid-template-columns:1fr auto;gap:2px 12px;
+  padding:10px 14px 10px 20px;border-top:1px solid rgba(35,41,48,.7);
+  align-items:baseline;
+}
+.trow:first-child{border-top:0}
+.trow-main{min-width:0;display:flex;flex-direction:column;gap:1px}
+.trow-car{font-size:13px;color:var(--ink-2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.35}
+.trow-sub{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-4);font-weight:600}
+.trow-time{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:15px;font-weight:600;color:var(--ink)}
+.trow-time.is-best{color:var(--purple)}
+
+/* ============================================================
+   ANALYSIS
+   ============================================================ */
+.stat-strip{
+  display:grid;grid-template-columns:repeat(2,1fr);
+  border-top:1px solid var(--rule);
+}
+@media (min-width:640px){.stat-strip{grid-template-columns:repeat(4,1fr)}}
+.stat{
+  padding:12px 14px;border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);
+  display:flex;flex-direction:column;gap:2px;min-width:0;
+}
+.stat:nth-child(2n){border-right:0}
+@media (min-width:640px){
+  .stat{border-bottom:0}
+  .stat:nth-child(2n){border-right:1px solid var(--rule)}
+  .stat:last-child{border-right:0}
+}
+.stat dt{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-4);font-weight:600;white-space:nowrap}
+.stat dd{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:19px;font-weight:600;color:var(--ink);line-height:1.25}
+.stat dd.green{color:var(--green)}
+.stat dd.purple{color:var(--purple)}
+.stat dd.amber{color:var(--amber)}
+.stat dd.sm{font-size:14px}
+
+.chart-wrap{width:100%;overflow:hidden;padding:6px 0 0}
+.chart-wrap svg{display:block;width:100%;height:auto;overflow:visible}
+.chart-empty{padding:38px 20px;text-align:center;color:var(--ink-4);font-size:12px;letter-spacing:.05em;text-transform:uppercase;font-weight:600}
+.chart-legend{
+  display:flex;gap:16px;flex-wrap:wrap;align-items:center;
+  padding:10px 14px 14px;font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-4);font-weight:600;
+}
+.chart-legend span{display:flex;align-items:center;gap:7px}
+.chart-legend i{display:block;flex:0 0 auto}
+
+.filter-bar{
+  display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;
+  padding:12px 14px;border-bottom:1px solid var(--rule);
+}
+.filter-bar .field{flex:1 1 140px;gap:5px}
+
+.cmp{display:flex;flex-direction:column}
+.cmp-row{
+  display:grid;grid-template-columns:1fr auto;gap:3px 12px;
+  padding:12px 14px;border-top:1px solid var(--rule);align-items:center;
+}
+.cmp-row:first-child{border-top:0}
+.cmp-name{min-width:0;display:flex;flex-direction:column;gap:1px}
+.cmp-name strong{font-size:13px;font-weight:600;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.35}
+.cmp-name em{font-style:normal;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-4);font-weight:600}
+.cmp-time{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:15px;font-weight:600;color:var(--ink);text-align:right}
+.cmp-bar{grid-column:1 / -1;height:3px;background:var(--rule);position:relative;margin-top:7px;overflow:hidden}
+.cmp-bar i{position:absolute;inset:0 auto 0 0;background:var(--ink-3);display:block}
+.cmp-bar i.tight{background:var(--green)}
+.cmp-bar i.loose{background:var(--amber)}
+.foot-note{
+  padding:12px 14px;border-top:1px solid var(--rule);
+  font-size:12px;line-height:1.6;color:var(--ink-3);
+}
+
+/* ============================================================
+   DATA VIEW
+   ============================================================ */
+.kv{display:flex;flex-direction:column}
+.kv-row{display:flex;justify-content:space-between;gap:14px;padding:10px 0;border-top:1px solid var(--rule);font-size:13px;align-items:baseline}
+.kv-row:first-child{border-top:0}
+.kv-row dt{color:var(--ink-3);font-weight:500}
+.kv-row dd{font-family:var(--font-mono);font-variant-numeric:tabular-nums;color:var(--ink);font-weight:600;text-align:right;white-space:nowrap}
+
+.notice{
+  display:flex;gap:11px;padding:13px 14px;
+  border:1px solid rgba(255,176,32,.28);
+  background:rgba(255,176,32,.055);border-radius:var(--r);
+}
+.notice svg{flex:0 0 auto;width:16px;height:16px;color:var(--amber);margin-top:2px}
+.notice p{font-size:13px;line-height:1.6;color:var(--ink-2)}
+.notice strong{color:var(--ink);font-weight:600}
+
+/* ============================================================
+   EMPTY STATE
+   ============================================================ */
+.empty{
+  display:flex;flex-direction:column;align-items:center;gap:11px;
+  padding:40px 24px;text-align:center;
+}
+.empty svg{width:40px;height:40px;color:var(--ink-4);opacity:.6}
+.empty h3{font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);font-weight:700}
+.empty p{font-size:13px;color:var(--ink-3);max-width:36ch;line-height:1.6}
+.empty .btn{margin-top:4px}
+
+/* ============================================================
+   TOAST + DIALOG
+   ============================================================ */
+.toast-stack{
+  position:fixed;left:50%;bottom:calc(74px + env(safe-area-inset-bottom));
+  transform:translateX(-50%);z-index:200;
+  display:flex;flex-direction:column;gap:6px;align-items:center;
+  pointer-events:none;width:calc(100% - 28px);max-width:400px;
+}
+.toast{
+  display:flex;align-items:center;gap:9px;
+  padding:11px 14px;border:1px solid var(--rule-3);border-radius:var(--r);
+  background:var(--plate-3);color:var(--ink);
+  font-size:13px;font-weight:500;
+  box-shadow:0 6px 24px rgba(0,0,0,.5);
+  animation:toast-in var(--t-quick) linear;
+  max-width:100%;
+}
+.toast i{width:5px;height:5px;flex:0 0 auto;display:block;background:var(--green)}
+.toast.err i{background:var(--red)}
+.toast.warn i{background:var(--amber)}
+@keyframes toast-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+dialog.confirm{
+  border:1px solid var(--rule-3);border-radius:var(--r);
+  background:var(--plate);color:var(--ink);
+  padding:0;max-width:400px;width:calc(100% - 32px);
+}
+dialog.confirm::backdrop{background:rgba(6,7,9,.74);backdrop-filter:blur(3px)}
+.confirm-head{padding:14px 16px;border-bottom:1px solid var(--rule);font-size:12px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--ink-2)}
+.confirm-body{padding:16px;font-size:14px;line-height:1.6;color:var(--ink-2)}
+.confirm-actions{display:flex;gap:8px;padding:0 16px 16px}
+.confirm-actions .btn{flex:1 1 0}
+.confirm-label{display:block;margin:12px 0 6px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;color:var(--ink-3)}
+.confirm-label:first-child{margin-top:0}
+
+/* ============================================================
+   DESKTOP
+   ============================================================ */
+@media (min-width:900px){
+  .app{
+    display:grid;
+    grid-template-columns:var(--rail-w) minmax(0,1fr);
+    grid-template-rows:58px minmax(0,1fr);
+    min-height:100vh;
+  }
+  .masthead{grid-column:1/-1;grid-row:1}
+  .tb-meta{display:flex}
+  .tb-status{display:flex}
+  .tb-brand{width:var(--rail-w);border-right:1px solid var(--rule-2)}
+
+  .rail{
+    position:sticky;top:58px;left:auto;right:auto;
+    grid-column:1;grid-row:2;
+    display:flex;flex-direction:column;
+    height:calc(100vh - 58px);
+    background:transparent;backdrop-filter:none;
+    border-top:0;border-right:1px solid var(--rule);
+    padding:16px 0;align-self:start;
+  }
+  .rail-item{
+    flex-direction:row;align-items:center;justify-content:flex-start;gap:11px;
+    padding:12px 16px;min-height:44px;
+    border-top:0;
+  }
+  .rail-item .rail-no{font-size:11px;width:16px;flex:0 0 auto}
+  .rail-item .rail-label{font-size:12px;flex:1 1 auto;text-align:left}
+  .rail-item .rail-count{position:static;margin-left:auto;font-size:11px}
+  .rail-item[aria-current="page"]{background:linear-gradient(90deg,rgba(181,123,255,.09),transparent 72%);box-shadow:inset 2px 0 0 var(--purple)}
+  .rail-foot{
+    display:flex;flex-direction:column;gap:3px;
+    margin-top:auto;padding:14px 16px 0;border-top:1px solid var(--rule);
+  }
+  .rail-foot span{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-4);font-weight:600}
+  .rail-foot b{font-family:var(--font-mono);font-size:12px;color:var(--ink-3);font-weight:500}
+
+  main{grid-column:2;grid-row:2;padding:24px 28px 44px;min-height:0}
+  .view{gap:16px}
+  .view-head h2{font-size:28px}
+  .toast-stack{bottom:24px;left:auto;right:24px;transform:none;width:auto;align-items:flex-end}
+
+  .plate-body{padding:16px}
+  .form-grid{gap:15px}
+  .lap{grid-template-columns:96px 1fr auto;grid-template-areas:"time meta actions";padding:11px 16px}
+  .lap-detail{grid-area:auto;display:none}
+  .lap:hover .lap-detail{display:flex}
+}
+@media (min-width:900px) and (hover:none){
+  .lap-detail{display:flex}
+}
+
+@media (min-width:1100px){
+  #v-log.is-active{
+    display:grid;
+    grid-template-columns:minmax(0,430px) minmax(0,1fr);
+    align-items:start;
+    gap:16px;
+  }
+  #v-log > .view-head{grid-column:1/-1}
+  #v-log > .plate:first-of-type{grid-column:1}
+  #v-log > .plate:last-of-type{grid-column:2}
+}
+
+/* ============================================================
+   MOTION / PRINT
+   ============================================================ */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms !important;transition-duration:.001ms !important}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="masthead">
+  <div class="tb-brand">
+    <svg class="tb-mark" viewBox="0 0 22 22" aria-hidden="true" focusable="false">
+      <path d="M2 19.5V3.2l9 8.4 9-8.4v16.3" fill="none" stroke="#B57BFF" stroke-width="1.8" stroke-linejoin="miter"/>
+      <path d="M1 21h20" stroke="#3C4650" stroke-width="1"/>
+    </svg>
+    <div class="tb-title">
+      <h1>Lap Times</h1>
+      <span>LMU &middot; ACC</span>
+    </div>
+  </div>
+  <dl class="tb-meta">
+    <div class="tb-cell"><dt>Laps</dt><dd id="m-laps">0</dd></div>
+    <div class="tb-cell"><dt>Circuits</dt><dd id="m-tracks">0</dd></div>
+    <div class="tb-cell"><dt>Fastest</dt><dd id="m-best" class="is-purple">&mdash;</dd></div>
+    <div class="tb-cell"><dt>Last logged</dt><dd id="m-last">&mdash;</dd></div>
+  </dl>
+  <div class="tb-spacer"></div>
+  <div class="tb-status"><i></i><span>Stored locally</span></div>
+</header>
+
+<nav class="rail" aria-label="Sections">
+  <button class="rail-item" type="button" data-view="log" aria-current="page">
+    <span class="rail-no">01</span><span class="rail-label">Log</span><span class="rail-count" id="rc-log"></span>
+  </button>
+  <button class="rail-item" type="button" data-view="timing">
+    <span class="rail-no">02</span><span class="rail-label">Timing</span><span class="rail-count" id="rc-timing"></span>
+  </button>
+  <button class="rail-item" type="button" data-view="analysis">
+    <span class="rail-no">03</span><span class="rail-label">Analysis</span><span class="rail-count" id="rc-analysis"></span>
+  </button>
+  <button class="rail-item" type="button" data-view="data">
+    <span class="rail-no">04</span><span class="rail-label">Data</span><span class="rail-count" id="rc-data"></span>
+  </button>
+  <div class="rail-foot">
+    <span>Local only</span>
+    <b id="rail-foot-note">0 laps stored</b>
+  </div>
+</nav>
+
+<main>
+  <!-- ================= LOG ================= -->
+  <section class="view is-active" id="v-log" aria-labelledby="h-log">
+    <div class="view-head">
+      <h2 id="h-log">Log a lap</h2>
+      <p>Type the time straight from the sim. Everything else is remembered from your last entry.</p>
+    </div>
+
+    <div class="plate">
+      <div class="plate-head">
+        <h3 id="form-title">New entry</h3>
+        <span class="head-note" id="form-mode">Adding</span>
+      </div>
+      <div class="plate-body">
+        <form class="form-grid" id="entry-form" novalidate autocomplete="off">
+          <div class="field">
+            <span class="field-label" id="lbl-game">Game</span>
+            <div class="seg" id="f-game" role="group" aria-labelledby="lbl-game">
+              <button type="button" data-game="lmu" aria-pressed="true">Le Mans Ultimate</button>
+              <button type="button" data-game="acc" aria-pressed="false">Assetto Corsa Comp.</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="f-time">Lap time</label>
+            <div class="time-field">
+              <input class="inp inp-time" id="f-time" inputmode="decimal" placeholder="1:43.271" spellcheck="false" autocapitalize="off" aria-describedby="f-time-echo">
+              <div class="time-echo" id="f-time-echo">M:SS.mmm</div>
+            </div>
+          </div>
+
+          <div class="frow">
+            <div class="field">
+              <label for="f-track">Circuit</label>
+              <select class="inp" id="f-track"></select>
+            </div>
+            <div class="field">
+              <label for="f-car">Car</label>
+              <select class="inp" id="f-car"></select>
+            </div>
+          </div>
+
+          <div class="frow">
+            <div class="field">
+              <label for="f-session">Session</label>
+              <select class="inp" id="f-session"></select>
+            </div>
+            <div class="field">
+              <label for="f-cond">Conditions</label>
+              <select class="inp" id="f-cond"></select>
+            </div>
+          </div>
+
+          <div class="frow">
+            <div class="field">
+              <label for="f-date">Date</label>
+              <input class="inp" id="f-date" type="date">
+            </div>
+            <div class="field">
+              <label for="f-notes">Notes <span class="muted">(optional)</span></label>
+              <input class="inp" id="f-notes" type="text" placeholder="Setup change, traffic, new tyres&hellip;" maxlength="140">
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-primary" type="submit" id="f-submit">Add lap</button>
+            <button class="btn" type="button" id="f-cancel" hidden>Cancel edit</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="plate">
+      <div class="plate-head">
+        <h3>Laps</h3>
+        <span class="head-note" id="laps-note">0 entries</span>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label for="lf-game" class="sr">Filter by game</label>
+          <select class="inp" id="lf-game">
+            <option value="">All games</option>
+            <option value="lmu">Le Mans Ultimate</option>
+            <option value="acc">Assetto Corsa Competizione</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="lf-session" class="sr">Filter by session</label>
+          <select class="inp" id="lf-session"><option value="">All sessions</option></select>
+        </div>
+        <div class="field">
+          <label for="lf-sort" class="sr">Sort</label>
+          <select class="inp" id="lf-sort">
+            <option value="recent">Newest first</option>
+            <option value="fast">Fastest first</option>
+            <option value="track">By circuit</option>
+          </select>
+        </div>
+      </div>
+      <div id="laps-host"></div>
+    </div>
+  </section>
+
+  <!-- ================= TIMING ================= -->
+  <section class="view" id="v-timing" aria-labelledby="h-timing">
+    <div class="view-head">
+      <h2 id="h-timing">Personal bests</h2>
+      <p>Your fastest lap at every circuit, broken down by car. Tap a circuit to open it.</p>
+    </div>
+    <div class="plate">
+      <div class="plate-head">
+        <h3>Personal bests</h3>
+        <span class="head-note" id="timing-note">by circuit</span>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label for="tf-game" class="sr">Filter by game</label>
+          <select class="inp" id="tf-game">
+            <option value="">All games</option>
+            <option value="lmu">Le Mans Ultimate</option>
+            <option value="acc">Assetto Corsa Competizione</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="tf-sort" class="sr">Sort</label>
+          <select class="inp" id="tf-sort">
+            <option value="recent">Most recent</option>
+            <option value="name">Circuit name</option>
+            <option value="laps">Most laps</option>
+          </select>
+        </div>
+      </div>
+      <div id="timing-host"></div>
+    </div>
+  </section>
+
+  <!-- ================= ANALYSIS ================= -->
+  <section class="view" id="v-analysis" aria-labelledby="h-analysis">
+    <div class="view-head">
+      <h2 id="h-analysis">Are you getting faster?</h2>
+      <p>Progression for one circuit and car, then how your consistency compares across every circuit.</p>
+    </div>
+
+    <div class="plate">
+      <div class="plate-head">
+        <h3>Summary</h3>
+        <span class="head-note" id="summary-note">&mdash;</span>
+      </div>
+      <dl class="stat-strip" id="summary-host"></dl>
+    </div>
+
+    <div class="plate">
+      <div class="plate-head">
+        <h3>Progression</h3>
+        <span class="head-note">lap time over time</span>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label for="cf-game" class="sr">Game</label>
+          <select class="inp" id="cf-game"></select>
+        </div>
+        <div class="field">
+          <label for="cf-track" class="sr">Circuit</label>
+          <select class="inp" id="cf-track"></select>
+        </div>
+        <div class="field">
+          <label for="cf-car" class="sr">Car</label>
+          <select class="inp" id="cf-car"></select>
+        </div>
+      </div>
+      <div id="chart-host"></div>
+    </div>
+
+    <div class="plate">
+      <div class="plate-head">
+        <h3>Circuit comparison</h3>
+        <span class="head-note" id="cmp-note">consistency by circuit</span>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label for="xf-game" class="sr">Game</label>
+          <select class="inp" id="xf-game">
+            <option value="">All games</option>
+            <option value="lmu">Le Mans Ultimate</option>
+            <option value="acc">Assetto Corsa Competizione</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="xf-car" class="sr">Car</label>
+          <select class="inp" id="xf-car"></select>
+        </div>
+      </div>
+      <div id="cmp-host"></div>
+    </div>
+  </section>
+
+  <!-- ================= DATA ================= -->
+  <section class="view" id="v-data" aria-labelledby="h-data">
+    <div class="view-head">
+      <h2 id="h-data">Export &amp; storage</h2>
+      <p>Your laps live in this browser only. Export is both your backup and your way onto another device.</p>
+    </div>
+
+    <div class="notice">
+      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.6 15 14H1L8 1.6Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M8 6v3.6M8 11.6v.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      <p><strong>Your laps live in this browser only.</strong> There is no server and no account. Clearing site data, using private browsing, or switching device will lose them. Export a CSV or backup regularly: that file is the only copy you control.</p>
+    </div>
+
+    <div class="plate">
+      <div class="plate-head">
+        <h3>Export</h3>
+        <span class="head-note" id="export-note">0 laps</span>
+      </div>
+      <div class="plate-body">
+        <div class="form-actions">
+          <button class="btn btn-primary" type="button" id="btn-csv">Download CSV</button>
+          <button class="btn" type="button" id="btn-json">Backup JSON</button>
+        </div>
+        <p class="field-hint" style="margin-top:10px">CSV opens in Excel, Sheets or Numbers and is the format for analysis. JSON is a full backup that restores every field exactly.</p>
+      </div>
+    </div>
+
+    <div class="plate">
+      <div class="plate-head">
+        <h3>Import</h3>
+        <span class="head-note">merge or replace</span>
+      </div>
+      <div class="plate-body">
+        <div class="form-actions">
+          <button class="btn" type="button" id="btn-import">Choose file&hellip;</button>
+          <button class="btn" type="button" id="btn-sample">Load sample data</button>
+        </div>
+        <p class="field-hint" style="margin-top:10px">Accepts a CSV exported from here, or a JSON backup. Sample data is synthetic. It exists so you can see the charts working, and can be wiped in one click.</p>
+      </div>
+    </div>
+
+    <div class="plate">
+      <div class="plate-head">
+        <h3>Storage</h3>
+        <span class="head-note">this browser</span>
+      </div>
+      <div class="plate-body">
+        <dl class="kv" id="storage-host"></dl>
+        <div class="form-actions" style="margin-top:14px">
+          <button class="btn btn-danger" type="button" id="btn-clear">Delete all laps</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="plate">
+      <div class="plate-head">
+        <h3>Library</h3>
+        <span class="head-note" id="lib-note">circuits &amp; cars</span>
+      </div>
+      <div class="plate-body">
+        <p class="field-hint" style="margin-bottom:12px">Both sims add content with DLC. When a new circuit or car arrives, add it here and it appears in the entry form straight away.</p>
+        <div class="form-actions">
+          <button class="btn btn-sm" type="button" data-add="track">Add circuit</button>
+          <button class="btn btn-sm" type="button" data-add="car">Add car</button>
+        </div>
+        <dl class="kv" id="lib-host" style="margin-top:12px"></dl>
+      </div>
+    </div>
+  </section>
+</main>
+</div>
+<div class="toast-stack" id="toasts" aria-live="polite"></div>
+<dialog class="confirm" id="confirm-dialog">
+  <div class="confirm-head" id="confirm-head">Confirm</div>
+  <div class="confirm-body" id="confirm-body"></div>
+  <div class="confirm-actions">
+    <button class="btn" id="confirm-cancel" type="button">Cancel</button>
+    <button class="btn btn-primary" id="confirm-ok" type="button">Confirm</button>
+  </div>
+</dialog>
+<input type="file" id="file-input" accept=".csv,.json,text/csv,application/json" class="sr" aria-hidden="true" tabindex="-1">
+<script>
+'use strict';
+
+/* ============================================================
+   LIBRARY — circuit and car rosters
+   Researched current to October 2026. Both are user-extensible
+   from the Data view because LMU keeps shipping DLC.
+   ============================================================ */
+const LIB = {
+  lmu: {
+    label: 'Le Mans Ultimate',
+    short: 'LMU',
+    tracks: [
+      ['Circuit de la Sarthe', 'France'],
+      ['Autodromo Nazionale Monza', 'Italy'],
+      ['Circuit de Spa-Francorchamps', 'Belgium'],
+      ['Sebring International Raceway', 'USA'],
+      ['Bahrain International Circuit', 'Bahrain'],
+      ['Algarve International Circuit', 'Portugal'],
+      ['Fuji Speedway', 'Japan'],
+      ['Autodromo Enzo e Dino Ferrari', 'Italy'],
+      ['Circuit of the Americas', 'USA'],
+      ['Autódromo José Carlos Pace', 'Brazil'],
+      ['Lusail International Circuit', 'Qatar'],
+      ['Silverstone Circuit', 'United Kingdom'],
+      ['Circuit Paul Ricard', 'France'],
+      ['Circuit de Barcelona-Catalunya', 'Spain'],
+      ['Daytona International Speedway', 'USA'],
+      ['WeatherTech Raceway Laguna Seca', 'USA'],
+      ['Michelin Raceway Road Atlanta', 'USA'],
+      ['Streets of Long Beach', 'USA']
+    ],
+    cars: [
+      ['Toyota GR010 Hybrid', 'Hypercar'],
+      ['Ferrari 499P', 'Hypercar'],
+      ['Porsche 963', 'Hypercar'],
+      ['Cadillac V-Series.R', 'Hypercar'],
+      ['BMW M Hybrid V8', 'Hypercar'],
+      ['Alpine A424', 'Hypercar'],
+      ['Peugeot 9X8', 'Hypercar'],
+      ['Lamborghini SC63', 'Hypercar'],
+      ['Aston Martin Valkyrie AMR-LMH', 'Hypercar'],
+      ['Isotta Fraschini Tipo6', 'Hypercar'],
+      ['Oreca 07 Gibson', 'LMP2'],
+      ['Ligier JS P325', 'LMP3'],
+      ['Ginetta G61-LT-P325-Evo', 'LMP3'],
+      ['Duqueine D09', 'LMP3'],
+      ['Ferrari 296 LMGT3', 'LMGT3'],
+      ['Porsche 911 GT3 R LMGT3', 'LMGT3'],
+      ['Chevrolet Corvette Z06 GT3.R', 'LMGT3'],
+      ['Aston Martin Vantage AMR GT3 Evo', 'LMGT3'],
+      ['Lamborghini Huracán GT3 EVO2', 'LMGT3'],
+      ['BMW M4 GT3', 'LMGT3'],
+      ['McLaren 720S GT3 Evo', 'LMGT3'],
+      ['Ford Mustang GT3', 'LMGT3'],
+      ['Mercedes-AMG GT3 Evo', 'LMGT3'],
+      ['Ferrari 488 GTE Evo', 'GTE'],
+      ['Porsche 911 RSR-19', 'GTE'],
+      ['Aston Martin Vantage AMR GTE', 'GTE'],
+      ['Chevrolet Corvette C8.R', 'GTE']
+    ]
+  },
+  acc: {
+    label: 'Assetto Corsa Competizione',
+    short: 'ACC',
+    tracks: [
+      ['Barcelona-Catalunya', 'Spain'],
+      ['Brands Hatch', 'United Kingdom'],
+      ['Hungaroring', 'Hungary'],
+      ['Misano World Circuit', 'Italy'],
+      ['Monza', 'Italy'],
+      ['Nürburgring GP', 'Germany'],
+      ['Paul Ricard', 'France'],
+      ['Silverstone', 'United Kingdom'],
+      ['Spa-Francorchamps', 'Belgium'],
+      ['Zandvoort', 'Netherlands'],
+      ['Zolder', 'Belgium'],
+      ['Donington Park', 'United Kingdom'],
+      ['Oulton Park', 'United Kingdom'],
+      ['Snetterton', 'United Kingdom'],
+      ['Kyalami', 'South Africa'],
+      ['Suzuka', 'Japan'],
+      ['WeatherTech Raceway Laguna Seca', 'USA'],
+      ['Mount Panorama', 'Australia'],
+      ['Imola', 'Italy'],
+      ['Circuit of the Americas', 'USA'],
+      ['Indianapolis Motor Speedway', 'USA'],
+      ['Watkins Glen International', 'USA'],
+      ['Valencia — Ricardo Tormo', 'Spain'],
+      ['Red Bull Ring', 'Austria'],
+      ['Nürburgring Nordschleife 24H', 'Germany']
+    ],
+    cars: [
+      ['Ferrari 296 GT3', 'GT3'],
+      ['Porsche 992 GT3 R', 'GT3'],
+      ['Lamborghini Huracán GT3 EVO2', 'GT3'],
+      ['BMW M4 GT3', 'GT3'],
+      ['Mercedes-AMG GT3 Evo', 'GT3'],
+      ['Audi R8 LMS GT3 evo II', 'GT3'],
+      ['Aston Martin Vantage AMR GT3 Evo', 'GT3'],
+      ['McLaren 720S GT3 Evo', 'GT3'],
+      ['Ford Mustang GT3', 'GT3'],
+      ['Chevrolet Corvette Z06 GT3.R', 'GT3'],
+      ['Honda NSX GT3 Evo', 'GT3'],
+      ['Bentley Continental GT3', 'GT3'],
+      ['Lexus RC F GT3', 'GT3'],
+      ['Ferrari 488 GT3 Evo', 'GT3'],
+      ['Nissan GT-R Nismo GT3', 'GT3'],
+      ['Emil Frey Jaguar G3', 'GT3'],
+      ['Aston Martin Vantage AMR GT4', 'GT4'],
+      ['BMW M4 GT4', 'GT4'],
+      ['Mercedes-AMG GT4', 'GT4'],
+      ['Porsche 718 Cayman GT4', 'GT4'],
+      ['McLaren 570S GT4', 'GT4'],
+      ['Audi R8 LMS GT4', 'GT4'],
+      ['Alpine A110 GT4', 'GT4'],
+      ['Chevrolet Camaro GT4.R', 'GT4'],
+      ['Ginetta G55 GT4', 'GT4'],
+      ['KTM X-Bow GT4', 'GT4'],
+      ['Maserati GranTurismo MC GT4', 'GT4'],
+      ['Audi R8 LMS GT2', 'GT2'],
+      ['Porsche 911 GT2 RS Clubsport Evo', 'GT2'],
+      ['KTM X-Bow GT2', 'GT2'],
+      ['Mercedes-AMG GT2', 'GT2'],
+      ['Maserati MC20 GT2', 'GT2'],
+      ['BMW M2 CS Racing', 'TCX'],
+      ['Porsche 911 GT3 Cup (992)', 'Cup'],
+      ['Ferrari 488 Challenge Evo', 'Cup'],
+      ['Lamborghini Huracán Super Trofeo EVO2', 'Cup']
+    ]
+  }
+};
+
+const SESSIONS = ['Practice', 'Qualifying', 'Race', 'Hotlap', 'Test'];
+const CONDITIONS = ['Dry', 'Damp', 'Wet', 'Mixed', 'Night — dry', 'Night — wet'];
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const KEY = 'laptimes.v1';
+const LASTKEY = 'laptimes.last';
+
+let state = { v: 1, laps: [], custom: { lmu: { tracks: [], cars: [] }, acc: { tracks: [], cars: [] } } };
+let editingId = null;
+let lastUsed = { game: 'lmu', track: '', car: '' };
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) {
+      const p = JSON.parse(raw);
+      if (p && Array.isArray(p.laps)) {
+        state.laps = p.laps.filter(l => l && typeof l.lapMs === 'number');
+        state.custom = {
+          lmu: { tracks: [], cars: [] },
+          acc: { tracks: [], cars: [] },
+          ...(p.custom || {})
+        };
+        if (state.custom.lmu === undefined) state.custom.lmu = { tracks: [], cars: [] };
+      }
+    }
+  } catch (e) {
+    console.warn('Could not read stored laps', e);
+  }
+  try {
+    const l = JSON.parse(localStorage.getItem(LASTKEY) || 'null');
+    if (l && l.game) lastUsed = l;
+  } catch (e) { /* ignore */ }
+}
+
+let saveTimer = null;
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(state));
+    } catch (e) {
+      toast('Could not save — browser storage may be full', 'err');
+    }
+    try { localStorage.setItem(LASTKEY, JSON.stringify(lastUsed)); } catch (e) { /* ignore */ }
+  }, 60);
+}
+
+/* ============================================================
+   TIME
+   ============================================================ */
+function parseTime(str) {
+  if (str == null) return null;
+  let s = String(str).trim().replace(/\s+/g, '').replace(',', '.');
+  if (!s) return null;
+  let m = s.match(/^(\d{1,2}):(\d{1,2})(?:\.(\d{1,3}))?$/);
+  if (m) {
+    const mins = +m[1], secs = +m[2];
+    if (secs >= 60) return null;
+    const frac = m[3] ? +(m[3] + '000').slice(0, 3) : 0;
+    return mins * 60000 + secs * 1000 + frac;
+  }
+  m = s.match(/^(\d{1,3}(?:\.\d{1,3})?)$/);
+  if (m) {
+    const v = parseFloat(m[1]);
+    if (!isFinite(v) || v <= 0) return null;
+    return Math.round(v * 1000);
+  }
+  return null;
+}
+
+function fmtTime(ms, short) {
+  if (ms == null || !isFinite(ms)) return '—';
+  const neg = ms < 0;
+  ms = Math.abs(Math.round(ms));
+  const m = Math.floor(ms / 60000);
+  const s = Math.floor((ms % 60000) / 1000);
+  const t = ms % 1000;
+  const body = m > 0
+    ? m + ':' + String(s).padStart(2, '0') + '.' + String(t).padStart(3, '0')
+    : (short ? (s + '.' + String(t).padStart(3, '0')) : s + '.' + String(t).padStart(3, '0'));
+  return (neg ? '−' : '') + body;
+}
+
+function fmtDelta(ms) {
+  if (ms == null || !isFinite(ms)) return '—';
+  const sign = ms > 0 ? '+' : ms < 0 ? '−' : '';
+  return sign + (Math.abs(ms) / 1000).toFixed(3);
+}
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+function todayISO() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function niceDate(iso) {
+  if (!iso) return '—';
+  const [y, m, d] = iso.split('-').map(Number);
+  if (!y || !m || !d) return iso;
+  const dt = new Date(y, m - 1, d);
+  return dt.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: '2-digit' });
+}
+function shortDate(iso) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-').map(Number);
+  if (!y || !m || !d) return iso;
+  const dt = new Date(y, m - 1, d);
+  return dt.toLocaleDateString(undefined, { day: '2-digit', month: 'short' });
+}
+function median(arr) {
+  if (!arr.length) return null;
+  const a = [...arr].sort((x, y) => x - y);
+  const mid = a.length >> 1;
+  return a.length % 2 ? a[mid] : (a[mid - 1] + a[mid]) / 2;
+}
+function stdev(arr) {
+  if (arr.length < 2) return 0;
+  const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
+  return Math.sqrt(arr.reduce((a, b) => a + (b - mean) ** 2, 0) / (arr.length - 1));
+}
+
+function trackList(game) {
+  const base = LIB[game].tracks.map(([n, c]) => ({ n, c }));
+  const extra = (state.custom[game]?.tracks || []).map(t => ({ n: t.n, c: t.c || '' }));
+  const seen = new Set(base.map(t => t.n));
+  return base.concat(extra.filter(t => !seen.has(t.n)));
+}
+function carList(game) {
+  const base = LIB[game].cars.map(([n, k]) => ({ n, k }));
+  const extra = (state.custom[game]?.cars || []).map(c => ({ n: c.n, k: c.k || 'Other' }));
+  const seen = new Set(base.map(c => c.n));
+  return base.concat(extra.filter(c => !seen.has(c.n)));
+}
+function trackCountry(game, name) {
+  const t = trackList(game).find(x => x.n === name);
+  return t ? t.c : '';
+}
+function carClass(game, name) {
+  const c = carList(game).find(x => x.n === name);
+  return c ? c.k : '';
+}
+
+/* ============================================================
+   TOAST + DIALOG
+   ============================================================ */
+function toast(msg, kind) {
+  const host = $('#toasts');
+  const el = document.createElement('div');
+  el.className = 'toast' + (kind ? ' ' + kind : '');
+  el.innerHTML = '<i></i><span>' + esc(msg) + '</span>';
+  host.appendChild(el);
+  setTimeout(() => {
+    el.style.transition = 'opacity 160ms linear';
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 180);
+  }, 2600);
+}
+
+let confirmResolve = null;
+function ask(opts) {
+  return new Promise(resolve => {
+    confirmResolve = resolve;
+    $('#confirm-head').textContent = opts.title || 'Confirm';
+    const fields = opts.fields || [];
+    let html = '';
+    if (opts.body) html += '<p>' + opts.body + '</p>';
+    fields.forEach((f, i) => {
+      html += '<label class="confirm-label" style="margin-top:' + (i === 0 ? '0' : '12px') + '">' + esc(f.label) + '</label>';
+      if (f.type === 'select') {
+        html += '<select class="inp" data-ask="' + i + '">' +
+          f.options.map(o => '<option value="' + esc(o) + '">' + esc(o) + '</option>').join('') + '</select>';
+      } else {
+        html += '<input class="inp" data-ask="' + i + '" placeholder="' + esc(f.placeholder || '') + '" value="' + esc(f.value || '') + '" maxlength="60">';
+      }
+    });
+    $('#confirm-body').innerHTML = html;
+    $('#confirm-ok').textContent = opts.ok || 'Confirm';
+    $('#confirm-ok').className = 'btn ' + (opts.danger ? 'btn-danger' : 'btn-primary');
+    const dlg = $('#confirm-dialog');
+    dlg.showModal();
+    const first = dlg.querySelector('[data-ask]');
+    if (first) setTimeout(() => { first.focus(); if (first.select) first.select(); }, 40);
+  });
+}
+function closeAsk(value) {
+  const dlg = $('#confirm-dialog');
+  if (dlg.open) dlg.close();
+  const r = confirmResolve;
+  confirmResolve = null;
+  if (r) r(value);
+}
+$('#confirm-cancel').addEventListener('click', () => closeAsk(null));
+$('#confirm-ok').addEventListener('click', () => {
+  const dlg = $('#confirm-dialog');
+  const inputs = $$('[data-ask]', dlg);
+  if (inputs.length) {
+    closeAsk(inputs.map(i => i.value.trim()));
+  } else {
+    closeAsk(true);
+  }
+});
+$('#confirm-dialog').addEventListener('cancel', e => { e.preventDefault(); closeAsk(null); });
+$('#confirm-dialog').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.matches('[data-ask]')) { e.preventDefault(); $('#confirm-ok').click(); }
+});
+
+/* ============================================================
+   FORM
+   ============================================================ */
+let formGame = 'lmu';
+
+function setGame(g) {
+  formGame = g;
+  $$('#f-game button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.game === g)));
+  fillTracks();
+  fillCars();
+}
+
+function fillTracks(preserve) {
+  const sel = $('#f-track');
+  const want = preserve || sel.value;
+  const list = trackList(formGame);
+  sel.innerHTML = '<option value="">Select circuit…</option>' +
+    list.map(t => '<option value="' + esc(t.n) + '">' + esc(t.n) + (t.c ? ' — ' + esc(t.c) : '') + '</option>').join('');
+  if (want && list.some(t => t.n === want)) sel.value = want;
+  else if (lastUsed.game === formGame && lastUsed.track && list.some(t => t.n === lastUsed.track)) sel.value = lastUsed.track;
+}
+
+function fillCars(preserve) {
+  const sel = $('#f-car');
+  const want = preserve || sel.value;
+  const list = carList(formGame);
+  const groups = {};
+  list.forEach(c => { (groups[c.k] = groups[c.k] || []).push(c.n); });
+  const keys = Object.keys(groups).sort();
+  sel.innerHTML = '<option value="">Select car…</option>' +
+    keys.map(k => '<optgroup label="' + esc(k) + '">' +
+      groups[k].map(n => '<option value="' + esc(n) + '">' + esc(n) + '</option>').join('') +
+      '</optgroup>').join('');
+  if (want && list.some(c => c.n === want)) sel.value = want;
+  else if (lastUsed.game === formGame && lastUsed.car && list.some(c => c.n === lastUsed.car)) sel.value = lastUsed.car;
+}
+
+function fillSessions() {
+  $('#f-session').innerHTML = SESSIONS.map(s => '<option value="' + esc(s) + '">' + esc(s) + '</option>').join('');
+}
+function fillConditions() {
+  $('#f-cond').innerHTML = CONDITIONS.map(c => '<option value="' + esc(c) + '">' + esc(c) + '</option>').join('');
+}
+
+function updateTimeEcho() {
+  const raw = $('#f-time').value;
+  const echo = $('#f-time-echo');
+  const inp = $('#f-time');
+  if (!raw.trim()) {
+    echo.className = 'time-echo';
+    echo.textContent = 'M:SS.mmm';
+    inp.classList.remove('is-bad');
+    return null;
+  }
+  const ms = parseTime(raw);
+  if (ms == null) {
+    echo.className = 'time-echo is-bad';
+    echo.textContent = 'Unreadable';
+    inp.classList.add('is-bad');
+    return null;
+  }
+  inp.classList.remove('is-bad');
+  echo.className = 'time-echo is-ok';
+  echo.innerHTML = 'Valid<b>' + esc(fmtTime(ms)) + '</b>';
+  return ms;
+}
+
+function resetForm() {
+  editingId = null;
+  $('#f-time').value = '';
+  $('#f-notes').value = '';
+  $('#f-date').value = todayISO();
+  $('#f-session').value = 'Practice';
+  $('#f-cond').value = 'Dry';
+  $('#form-title').textContent = 'New entry';
+  $('#form-mode').textContent = 'Adding';
+  $('#f-submit').textContent = 'Add lap';
+  $('#f-cancel').hidden = true;
+  updateTimeEcho();
+}
+
+function startEdit(id) {
+  const lap = state.laps.find(l => l.id === id);
+  if (!lap) return;
+  editingId = id;
+  setGame(lap.game);
+  $('#f-time').value = fmtTime(lap.lapMs);
+  $('#f-track').value = lap.track;
+  $('#f-car').value = lap.car;
+  $('#f-session').value = lap.session;
+  $('#f-cond').value = lap.cond;
+  $('#f-date').value = lap.date;
+  $('#f-notes').value = lap.notes || '';
+  $('#form-title').textContent = 'Editing entry';
+  $('#form-mode').textContent = 'Changing';
+  $('#f-submit').textContent = 'Save changes';
+  $('#f-cancel').hidden = false;
+  updateTimeEcho();
+  showView('log');
+  $('#f-time').focus();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+$('#entry-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const ms = parseTime($('#f-time').value);
+  if (ms == null) { toast('Enter a lap time like 1:43.271', 'err'); $('#f-time').focus(); return; }
+  const track = $('#f-track').value;
+  const car = $('#f-car').value;
+  if (!track) { toast('Pick a circuit', 'err'); $('#f-track').focus(); return; }
+  if (!car) { toast('Pick a car', 'err'); $('#f-car').focus(); return; }
+
+  const payload = {
+    game: formGame,
+    track,
+    car,
+    cls: carClass(formGame, car),
+    lapMs: ms,
+    session: $('#f-session').value,
+    cond: $('#f-cond').value,
+    date: $('#f-date').value || todayISO(),
+    notes: $('#f-notes').value.trim()
+  };
+
+  if (editingId) {
+    const i = state.laps.findIndex(l => l.id === editingId);
+    if (i > -1) state.laps[i] = { ...state.laps[i], ...payload };
+    toast('Entry updated');
+  } else {
+    state.laps.push({ id: uid(), created: Date.now(), ...payload });
+    toast('Lap added — ' + fmtTime(ms));
+  }
+
+  lastUsed = { game: formGame, track, car };
+  save();
+  const keepTrack = track, keepCar = car;
+  resetForm();
+  fillTracks(keepTrack);
+  fillCars(keepCar);
+  renderAll();
+});
+
+$('#f-cancel').addEventListener('click', () => { resetForm(); fillTracks(); fillCars(); });
+
+$('#f-time').addEventListener('input', updateTimeEcho);
+$('#f-time').addEventListener('blur', () => {
+  const ms = parseTime($('#f-time').value);
+  if (ms != null) { $('#f-time').value = fmtTime(ms); updateTimeEcho(); }
+});
+$('#f-time').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); $('#entry-form').requestSubmit(); }
+});
+
+$$('#f-game button').forEach(b => {
+  b.addEventListener('click', () => { setGame(b.dataset.game); save(); });
+});
+
+/* ============================================================
+   RENDER — derived data
+   ============================================================ */
+function comboKey(l) { return l.game + '|' + l.track + '|' + l.car; }
+
+function bestByCombo() {
+  const map = new Map();
+  state.laps.forEach(l => {
+    const k = comboKey(l);
+    const cur = map.get(k);
+    if (!cur || l.lapMs < cur.lapMs) map.set(k, l);
+  });
+  return map;
+}
+
+function bestByTrack() {
+  const map = new Map();
+  state.laps.forEach(l => {
+    const k = l.game + '|' + l.track;
+    const cur = map.get(k);
+    if (!cur || l.lapMs < cur.lapMs) map.set(k, l);
+  });
+  return map;
+}
+
+/* ============================================================
+   RENDER — masthead + rail
+   ============================================================ */
+function renderChrome() {
+  const n = state.laps.length;
+  const tracks = new Set(state.laps.map(l => l.game + '|' + l.track)).size;
+  const best = n ? state.laps.reduce((a, b) => (b.lapMs < a.lapMs ? b : a)) : null;
+  const last = n ? state.laps.reduce((a, b) => (b.created > a.created ? b : a)) : null;
+
+  $('#m-laps').textContent = n;
+  $('#m-tracks').textContent = tracks;
+  $('#m-best').textContent = best ? fmtTime(best.lapMs) : '—';
+  $('#m-last').textContent = last ? shortDate(last.date) : '—';
+
+  $('#rc-log').textContent = n || '';
+  $('#rc-timing').textContent = tracks || '';
+  $('#rc-analysis').textContent = n ? '◆' : '';
+  $('#rc-data').textContent = '';
+  $('#rail-foot-note').textContent = n === 1 ? '1 lap stored' : n + ' laps stored';
+
+  $('#laps-note').textContent = n === 1 ? '1 entry' : n + ' entries';
+  $('#export-note').textContent = n === 1 ? '1 lap' : n + ' laps';
+  $('#timing-note').textContent = tracks ? tracks + (tracks === 1 ? ' circuit' : ' circuits') : 'by circuit';
+}
+
+/* ============================================================
+   RENDER — lap list
+   ============================================================ */
+const ICON_EDIT = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M11.3 2.3 13.7 4.7 5.6 12.8 2.6 13.4l.6-3 8.1-8.1Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>';
+const ICON_DEL = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+function renderLaps() {
+  const host = $('#laps-host');
+  const fg = $('#lf-game').value;
+  const fs = $('#lf-session').value;
+  const sort = $('#lf-sort').value;
+
+  let rows = state.laps.slice();
+  if (fg) rows = rows.filter(l => l.game === fg);
+  if (fs) rows = rows.filter(l => l.session === fs);
+
+  if (sort === 'fast') rows.sort((a, b) => a.lapMs - b.lapMs);
+  else if (sort === 'track') rows.sort((a, b) => a.track.localeCompare(b.track) || a.lapMs - b.lapMs);
+  else rows.sort((a, b) => (b.date || '').localeCompare(a.date || '') || b.created - a.created);
+
+  if (!state.laps.length) {
+    host.innerHTML = '<div class="empty">' +
+      '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.3"/><path d="M12 12V7M12 12l3.5 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>' +
+      '<h3>No laps yet</h3>' +
+      '<p>Add your first lap above. Everything stays in this browser, so nothing leaves your machine.</p>' +
+      '</div>';
+    return;
+  }
+  if (!rows.length) {
+    host.innerHTML = '<div class="empty"><h3>Nothing matches</h3><p>No laps match these filters. Try clearing them.</p></div>';
+    return;
+  }
+
+  const bests = bestByCombo();
+  const shown = rows.slice(0, 400);
+
+  host.innerHTML = '<div class="lap-list">' + shown.map(l => {
+    const isPB = bests.get(comboKey(l))?.id === l.id;
+    const det = [];
+    det.push('<span class="tag">' + esc(l.session) + '</span>');
+    det.push('<span>' + esc(l.cond) + '</span>');
+    det.push('<span>' + esc(niceDate(l.date)) + '</span>');
+    if (l.cls) det.push('<span>' + esc(l.cls) + '</span>');
+    if (l.notes) det.push('<span class="note">' + esc(l.notes) + '</span>');
+    return '<div class="lap" data-id="' + l.id + '">' +
+      '<div class="lap-time' + (isPB ? ' is-pb' : '') + '">' + fmtTime(l.lapMs) + '</div>' +
+      '<div class="lap-meta">' +
+        '<div class="lap-track">' + esc(l.track) + '</div>' +
+        '<div class="lap-car">' + esc(LIB[l.game].short) + ' · ' + esc(l.car) + '</div>' +
+      '</div>' +
+      '<div class="lap-actions">' +
+        '<button class="icon-btn" type="button" data-act="edit" data-id="' + l.id + '" aria-label="Edit lap">' + ICON_EDIT + '</button>' +
+        '<button class="icon-btn danger" type="button" data-act="del" data-id="' + l.id + '" aria-label="Delete lap">' + ICON_DEL + '</button>' +
+      '</div>' +
+      '<div class="lap-detail">' + det.join('') + '</div>' +
+    '</div>';
+  }).join('') + '</div>' +
+  (rows.length > shown.length ? '<p class="foot-note">Showing first ' + shown.length + ' of ' + rows.length + '. Export for the full record.</p>' : '');
+}
+
+$('#laps-host').addEventListener('click', async e => {
+  const btn = e.target.closest('[data-act]');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  if (btn.dataset.act === 'edit') startEdit(id);
+  if (btn.dataset.act === 'del') {
+    const lap = state.laps.find(l => l.id === id);
+    if (!lap) return;
+    const ok = await ask({
+      title: 'Delete lap',
+      body: 'Remove <strong>' + esc(fmtTime(lap.lapMs)) + '</strong> at ' + esc(lap.track) + '? This cannot be undone.',
+      ok: 'Delete',
+      danger: true
+    });
+    if (ok) {
+      state.laps = state.laps.filter(l => l.id !== id);
+      save(); renderAll();
+      toast('Lap deleted', 'warn');
+    }
+  }
+});
+
+['#lf-game', '#lf-session', '#lf-sort'].forEach(s => $(s).addEventListener('change', renderLaps));
+
+/* ============================================================
+   RENDER — timing (personal bests)
+   ============================================================ */
+function renderTiming() {
+  const host = $('#timing-host');
+  const fg = $('#tf-game').value;
+  const sort = $('#tf-sort').value;
+
+  let laps = state.laps.slice();
+  if (fg) laps = laps.filter(l => l.game === fg);
+
+  if (!laps.length) {
+    host.innerHTML = '<div class="empty">' +
+      '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>' +
+      '<h3>Nothing to compare yet</h3><p>Log laps at two or more circuits and this becomes your personal leaderboard.</p></div>';
+    return;
+  }
+
+  // group by track, then by car
+  const byTrack = new Map();
+  laps.forEach(l => {
+    const k = l.game + '|' + l.track;
+    if (!byTrack.has(k)) byTrack.set(k, { game: l.game, track: l.track, laps: [] });
+    byTrack.get(k).laps.push(l);
+  });
+
+  let groups = Array.from(byTrack.values());
+  groups.forEach(g => {
+    g.best = Math.min(...g.laps.map(l => l.lapMs));
+    g.lastDate = g.laps.reduce((a, b) => (b.date > a ? b.date : a), '');
+    const byCar = new Map();
+    g.laps.forEach(l => {
+      if (!byCar.has(l.car)) byCar.set(l.car, { car: l.car, cls: l.cls, laps: [] });
+      byCar.get(l.car).laps.push(l);
+    });
+    g.cars = Array.from(byCar.values()).map(c => ({
+      ...c,
+      best: Math.min(...c.laps.map(l => l.lapMs)),
+      count: c.laps.length
+    })).sort((a, b) => a.best - b.best);
+  });
+
+  if (sort === 'name') groups.sort((a, b) => a.track.localeCompare(b.track));
+  else if (sort === 'laps') groups.sort((a, b) => b.laps.length - a.laps.length);
+  else groups.sort((a, b) => (b.lastDate || '').localeCompare(a.lastDate || ''));
+
+  host.innerHTML = groups.map(g => {
+    const total = g.laps.length;
+    return '<div class="tgroup" data-track="' + esc(g.game + '|' + g.track) + '">' +
+      '<button class="tgroup-head" type="button" aria-expanded="false">' +
+        '<span class="tgroup-name">' +
+          '<strong>' + esc(g.track) + '</strong>' +
+          '<em>' + esc(LIB[g.game].short) + ' · ' + total + (total === 1 ? ' lap' : ' laps') + ' · ' + g.cars.length + (g.cars.length === 1 ? ' car' : ' cars') + '</em>' +
+        '</span>' +
+        '<span class="tgroup-best">' + fmtTime(g.best) + '</span>' +
+        '<svg class="tgroup-chev" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M5 2.5 9.5 7 5 11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+      '</button>' +
+      '<div class="tgroup-body">' +
+        g.cars.map(c => {
+          const isPB = c.best === g.best;
+          return '<div class="trow">' +
+            '<div class="trow-main">' +
+              '<span class="trow-car">' + esc(c.car) + '</span>' +
+              '<span class="trow-sub">' + esc(c.cls || '—') + ' · ' + c.count + (c.count === 1 ? ' lap' : ' laps') + '</span>' +
+            '</div>' +
+            '<span class="trow-time' + (isPB ? ' is-best' : '') + '">' + fmtTime(c.best) + '</span>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+$('#timing-host').addEventListener('click', e => {
+  const head = e.target.closest('.tgroup-head');
+  if (!head) return;
+  const open = head.getAttribute('aria-expanded') === 'true';
+  head.setAttribute('aria-expanded', String(!open));
+  const body = head.nextElementSibling;
+  if (body) body.classList.toggle('is-open', !open);
+});
+['#tf-game', '#tf-sort'].forEach(s => $(s).addEventListener('change', renderTiming));
+
+/* ============================================================
+   RENDER — analysis
+   ============================================================ */
+function renderSummary() {
+  const host = $('#summary-host');
+  const n = state.laps.length;
+  const tracks = new Set(state.laps.map(l => l.game + '|' + l.track)).size;
+  const days = new Set(state.laps.map(l => l.date)).size;
+
+  if (!n) {
+    $('#summary-note').textContent = 'no data';
+    host.innerHTML = ['Laps', 'Circuits', 'Sessions', 'Best'].map(k =>
+      '<div class="stat"><dt>' + k + '</dt><dd class="sm">—</dd></div>').join('');
+    return;
+  }
+
+  const best = state.laps.reduce((a, b) => (b.lapMs < a.lapMs ? b : a));
+
+  // improvement: compare median of oldest third vs newest third
+  const chrono = state.laps.slice().sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.created - b.created);
+  let gainHtml = '<dd class="sm">—</dd>';
+  if (chrono.length >= 6) {
+    const third = Math.max(2, Math.floor(chrono.length / 3));
+    const early = median(chrono.slice(0, third).map(l => l.lapMs));
+    const late = median(chrono.slice(-third).map(l => l.lapMs));
+    const gain = early - late;
+    gainHtml = '<dd class="' + (gain > 0 ? 'green' : 'amber') + ' sm">' + fmtDelta(gain) + '</dd>';
+  }
+
+  $('#summary-note').textContent = days + (days === 1 ? ' day logged' : ' days logged');
+
+  host.innerHTML =
+    '<div class="stat"><dt>Laps</dt><dd>' + n + '</dd></div>' +
+    '<div class="stat"><dt>Circuits</dt><dd>' + tracks + '</dd></div>' +
+    '<div class="stat"><dt>Pace gained</dt>' + gainHtml + '</div>' +
+    '<div class="stat"><dt>Fastest ever</dt><dd class="purple sm">' + fmtTime(best.lapMs) + '</dd></div>';
+}
+
+/* ---- progression chart ---- */
+let chartData = [];
+
+function chartSVG(laps, width) {
+  const W = Math.max(280, width || 720);
+  const H = W < 460 ? 220 : 260;
+  const PL = W < 460 ? 46 : 58;
+  const PR = 14;
+  const PT = 16;
+  const PB = W < 460 ? 30 : 34;
+
+  if (!laps.length) {
+    return '<div class="chart-empty">No laps for this combination</div>';
+  }
+
+  const ys = laps.map(l => l.lapMs);
+  let min = Math.min(...ys), max = Math.max(...ys);
+  if (min === max) { min -= 800; max += 800; }
+  const padY = (max - min) * 0.14;
+  min -= padY; max += padY;
+
+  const iw = W - PL - PR;
+  const ih = H - PT - PB;
+  const x = i => PL + (laps.length === 1 ? iw / 2 : (i / (laps.length - 1)) * iw);
+  const y = v => PT + (1 - (v - min) / (max - min)) * ih;
+
+  const ticks = 4;
+  let g = '';
+  for (let i = 0; i <= ticks; i++) {
+    const v = min + (i / ticks) * (max - min);
+    const yy = y(v);
+    g += '<line x1="' + PL + '" y1="' + yy.toFixed(1) + '" x2="' + (W - PR) + '" y2="' + yy.toFixed(1) + '" stroke="#242A32" stroke-width="1"/>';
+    g += '<text x="' + (PL - 8) + '" y="' + (yy + 3.5).toFixed(1) + '" text-anchor="end" fill="#6B7480" font-size="' + (W < 460 ? 9 : 10) + '" font-family="ui-monospace,monospace">' + fmtTime(Math.round(v)).replace(/^0:/, '') + '</text>';
+  }
+
+  // all laps polyline
+  const pts = laps.map((l, i) => x(i).toFixed(1) + ',' + y(l.lapMs).toFixed(1)).join(' ');
+
+  // best-so-far stepped line
+  let running = Infinity;
+  const bestPts = laps.map((l, i) => {
+    running = Math.min(running, l.lapMs);
+    return x(i).toFixed(1) + ',' + y(running).toFixed(1);
+  }).join(' ');
+
+  // dots
+  const dots = laps.map((l, i) => {
+    const isBest = l.lapMs === Math.min(...ys);
+    return '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(l.lapMs).toFixed(1) + '" r="' + (isBest ? 3.4 : 2.4) + '" fill="' + (isBest ? '#B57BFF' : '#0C0E11') + '" stroke="' + (isBest ? '#B57BFF' : '#6B7480') + '" stroke-width="1.3"/>';
+  }).join('');
+
+  // x labels
+  let xl = '';
+  const labelIdx = laps.length <= 3
+    ? laps.map((_, i) => i)
+    : [0, Math.floor((laps.length - 1) / 2), laps.length - 1];
+  labelIdx.forEach((i, k) => {
+    const anchor = k === 0 ? 'start' : (k === labelIdx.length - 1 && labelIdx.length > 1 ? 'end' : 'middle');
+    xl += '<text x="' + x(i).toFixed(1) + '" y="' + (H - 10) + '" text-anchor="' + anchor + '" fill="#4A525C" font-size="' + (W < 460 ? 9 : 10) + '" font-family="ui-monospace,monospace">' + esc(shortDate(laps[i].date)) + '</text>';
+  });
+
+  return '<div class="chart-wrap"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Lap time progression chart">' +
+    g +
+    '<polyline points="' + pts + '" fill="none" stroke="#3C4650" stroke-width="1.4" stroke-linejoin="round"/>' +
+    '<polyline points="' + bestPts + '" fill="none" stroke="#B57BFF" stroke-width="2" stroke-linejoin="round" stroke-dasharray="4 3"/>' +
+    dots + xl +
+    '</svg></div>' +
+    '<div class="chart-legend">' +
+      '<span><i style="width:14px;height:1.4px;background:#3B444F"></i>Each lap</span>' +
+      '<span><i style="width:14px;height:2px;background:#B57BFF"></i>Best so far</span>' +
+      '<span style="margin-left:auto">' + laps.length + (laps.length === 1 ? ' lap' : ' laps') + '</span>' +
+    '</div>';
+}
+
+function fillChartFilters() {
+  const gs = $('#cf-game');
+  const games = Array.from(new Set(state.laps.map(l => l.game)));
+  if (!games.length) { gs.innerHTML = '<option value="">—</option>'; }
+  else {
+    const cur = gs.value;
+    gs.innerHTML = games.map(g => '<option value="' + g + '">' + esc(LIB[g].short) + '</option>').join('');
+    if (games.includes(cur)) gs.value = cur;
+  }
+  const g = gs.value || games[0] || 'lmu';
+
+  const tracks = Array.from(new Set(state.laps.filter(l => l.game === g).map(l => l.track))).sort();
+  const ts = $('#cf-track');
+  const curT = ts.value;
+  ts.innerHTML = tracks.length
+    ? tracks.map(t => '<option value="' + esc(t) + '">' + esc(t) + '</option>').join('')
+    : '<option value="">—</option>';
+  if (tracks.includes(curT)) ts.value = curT;
+
+  const track = ts.value;
+  const cars = Array.from(new Set(state.laps.filter(l => l.game === g && l.track === track).map(l => l.car))).sort();
+  const cs = $('#cf-car');
+  const curC = cs.value;
+  cs.innerHTML = '<option value="">All cars</option>' +
+    cars.map(c => '<option value="' + esc(c) + '">' + esc(c) + '</option>').join('');
+  if (cars.includes(curC)) cs.value = curC;
+}
+
+function renderChart() {
+  const g = $('#cf-game').value;
+  const t = $('#cf-track').value;
+  const c = $('#cf-car').value;
+
+  let laps = state.laps.filter(l => l.game === g && l.track === t);
+  if (c) laps = laps.filter(l => l.car === c);
+  laps.sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.created - b.created);
+
+  const host = $('#chart-host');
+  if (!laps.length) {
+    host.innerHTML = '<div class="chart-empty">' + (state.laps.length ? 'No laps for this combination' : 'Log laps to see progression') + '</div>';
+    return;
+  }
+
+  const width = Math.max(280, host.clientWidth || 720);
+  let html = chartSVG(laps, width);
+
+  const best = Math.min(...laps.map(l => l.lapMs));
+  const med = median(laps.map(l => l.lapMs));
+  const spread = Math.max(...laps.map(l => l.lapMs)) - best;
+  const consistency = stdev(laps.map(l => l.lapMs));
+
+  html += '<dl class="stat-strip">' +
+    '<div class="stat"><dt>Best</dt><dd class="purple sm">' + fmtTime(best) + '</dd></div>' +
+    '<div class="stat"><dt>Median</dt><dd class="sm">' + fmtTime(Math.round(med)) + '</dd></div>' +
+    '<div class="stat"><dt>Spread</dt><dd class="sm">' + fmtDelta(spread) + '</dd></div>' +
+    '<div class="stat"><dt>σ</dt><dd class="sm">±' + (consistency / 1000).toFixed(3) + '</dd></div>' +
+    '</dl>';
+
+  host.innerHTML = html;
+}
+
+['#cf-game', '#cf-track', '#cf-car'].forEach(s => {
+  $(s).addEventListener('change', () => { fillChartFilters(); renderChart(); });
+});
+
+/* ---- circuit comparison ---- */
+function fillCmpCars() {
+  const g = $('#xf-game').value;
+  const cars = Array.from(new Set(
+    state.laps.filter(l => !g || l.game === g).map(l => l.car)
+  )).sort();
+  const sel = $('#xf-car');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All cars</option>' +
+    cars.map(c => '<option value="' + esc(c) + '">' + esc(c) + '</option>').join('');
+  if (cars.includes(cur)) sel.value = cur;
+}
+
+function renderCmp() {
+  const host = $('#cmp-host');
+  const g = $('#xf-game').value;
+  const c = $('#xf-car').value;
+
+  let laps = state.laps.slice();
+  if (g) laps = laps.filter(l => l.game === g);
+  if (c) laps = laps.filter(l => l.car === c);
+
+  if (!laps.length) {
+    host.innerHTML = '<div class="empty"><h3>No laps to compare</h3><p>Log laps at a few circuits and their consistency shows up here side by side.</p></div>';
+    return;
+  }
+
+  const byTrack = new Map();
+  laps.forEach(l => {
+    const k = l.game + '|' + l.track;
+    if (!byTrack.has(k)) byTrack.set(k, { game: l.game, track: l.track, times: [] });
+    byTrack.get(k).times.push(l.lapMs);
+  });
+
+  const rows = Array.from(byTrack.values()).map(r => {
+    const best = Math.min(...r.times);
+    const sd = stdev(r.times);
+    return { ...r, best, sd, count: r.times.length, pct: sd / best };
+  }).sort((a, b) => a.pct - b.pct);
+
+  const maxPct = Math.max(...rows.map(r => r.pct), 0.0001);
+
+  $('#cmp-note').textContent = rows.length + (rows.length === 1 ? ' circuit' : ' circuits') + ' · tightest first';
+
+  host.innerHTML = '<div class="cmp">' + rows.map(r => {
+    const w = Math.max(2, (r.pct / maxPct) * 100);
+    const cls = r.pct < 0.008 ? 'tight' : r.pct < 0.02 ? '' : 'loose';
+    return '<div class="cmp-row">' +
+      '<div class="cmp-name">' +
+        '<strong>' + esc(r.track) + '</strong>' +
+        '<em>' + esc(LIB[r.game].short) + ' · ' + r.count + (r.count === 1 ? ' lap' : ' laps') + ' · ±' + (r.sd / 1000).toFixed(3) + 's</em>' +
+      '</div>' +
+      '<div class="cmp-time">' + fmtTime(r.best) + '</div>' +
+      '<div class="cmp-bar"><i class="' + cls + '" style="width:' + w.toFixed(1) + '%"></i></div>' +
+    '</div>';
+  }).join('') + '</div>' +
+  '<p class="foot-note">Bar length is lap-to-lap spread relative to your loosest circuit. Short green bars mean you can repeat the lap; long amber bars mean the pace is there but not yet repeatable.</p>';
+}
+
+['#xf-game', '#xf-car'].forEach(s => {
+  $(s).addEventListener('change', () => { fillCmpCars(); renderCmp(); });
+});
+
+/* ============================================================
+   RENDER — data view
+   ============================================================ */
+function renderStorage() {
+  const n = state.laps.length;
+  let bytes = 0;
+  try { bytes = new Blob([JSON.stringify(state)]).size; } catch (e) { bytes = 0; }
+  const size = bytes > 1024 ? (bytes / 1024).toFixed(1) + ' KB' : bytes + ' B';
+  const sample = state.laps.filter(l => l.sample).length;
+
+  const rows = [
+    ['Laps stored', n],
+    ['Sample laps', sample],
+    ['Circuits in use', new Set(state.laps.map(l => l.game + '|' + l.track)).size],
+    ['Custom circuits added', state.custom.lmu.tracks.length + state.custom.acc.tracks.length],
+    ['Custom cars added', state.custom.lmu.cars.length + state.custom.acc.cars.length],
+    ['Storage used', size]
+  ];
+  $('#storage-host').innerHTML = rows.map(([k, v]) =>
+    '<div class="kv-row"><dt>' + esc(k) + '</dt><dd>' + esc(v) + '</dd></div>').join('');
+
+  $('#btn-sample').textContent = sample ? 'Remove sample data' : 'Load sample data';
+
+  const lib = [
+    ['LMU circuits available', LIB.lmu.tracks.length + state.custom.lmu.tracks.length],
+    ['LMU cars available', LIB.lmu.cars.length + state.custom.lmu.cars.length],
+    ['ACC circuits available', LIB.acc.tracks.length + state.custom.acc.tracks.length],
+    ['ACC cars available', LIB.acc.cars.length + state.custom.acc.cars.length]
+  ];
+  $('#lib-host').innerHTML = lib.map(([k, v]) =>
+    '<div class="kv-row"><dt>' + esc(k) + '</dt><dd>' + esc(v) + '</dd></div>').join('');
+}
+
+/* ============================================================
+   CSV
+   ============================================================ */
+const CSV_HEADER = ['id', 'game', 'circuit', 'country', 'car', 'class', 'lap_time', 'lap_ms', 'session', 'conditions', 'date', 'notes'];
+
+function csvCell(v) {
+  const s = v == null ? '' : String(v);
+  return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+function buildCSV() {
+  const rows = [CSV_HEADER.join(',')];
+  const sorted = state.laps.slice().sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.created - b.created);
+  sorted.forEach(l => {
+    rows.push([
+      l.id,
+      LIB[l.game] ? LIB[l.game].short : l.game,
+      l.track,
+      trackCountry(l.game, l.track),
+      l.car,
+      l.cls || '',
+      fmtTime(l.lapMs),
+      l.lapMs,
+      l.session,
+      l.cond,
+      l.date,
+      l.notes || ''
+    ].map(csvCell).join(','));
+  });
+  return rows.join('\r\n');
+}
+
+function download(filename, text, mime) {
+  const blob = new Blob([text], { type: mime || 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+function stamp() {
+  const d = new Date();
+  return d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0') + '-' +
+    String(d.getHours()).padStart(2, '0') + String(d.getMinutes()).padStart(2, '0');
+}
+
+$('#btn-csv').addEventListener('click', () => {
+  if (!state.laps.length) { toast('Nothing to export yet', 'warn'); return; }
+  download('laptimes-' + stamp() + '.csv', buildCSV(), 'text/csv;charset=utf-8');
+  toast('CSV exported — ' + state.laps.length + ' laps');
+});
+
+$('#btn-json').addEventListener('click', () => {
+  if (!state.laps.length) { toast('Nothing to back up yet', 'warn'); return; }
+  download('laptimes-backup-' + stamp() + '.json', JSON.stringify(state, null, 2), 'application/json');
+  toast('Backup saved');
+});
+
+/* ---- CSV parser ---- */
+function parseCSV(text) {
+  const rows = [];
+  let row = [], cell = '', inQ = false;
+  const s = text.replace(/^\uFEFF/, '');
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (inQ) {
+      if (ch === '"') {
+        if (s[i + 1] === '"') { cell += '"'; i++; }
+        else inQ = false;
+      } else cell += ch;
+    } else {
+      if (ch === '"') inQ = true;
+      else if (ch === ',') { row.push(cell); cell = ''; }
+      else if (ch === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+      else if (ch === '\r') { /* skip */ }
+      else cell += ch;
+    }
+  }
+  if (cell.length || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(r => r.length && r.some(c => String(c).trim() !== ''));
+}
+
+function ingestCSV(text) {
+  const rows = parseCSV(text);
+  if (rows.length < 2) return { added: 0, skipped: 0, error: 'File has no data rows' };
+  const head = rows[0].map(h => String(h).trim().toLowerCase());
+  const idx = {};
+  head.forEach((h, i) => { idx[h] = i; });
+
+  const need = ['game', 'circuit', 'car'];
+  for (const n of need) {
+    if (idx[n] === undefined) return { added: 0, skipped: 0, error: 'Missing column: ' + n };
+  }
+
+  const existing = new Set(state.laps.map(l => l.id));
+  let added = 0, skipped = 0;
+
+  rows.slice(1).forEach(r => {
+    const get = k => (idx[k] !== undefined ? String(r[idx[k]] ?? '').trim() : '');
+    const gameRaw = get('game').toLowerCase();
+    const game = /^(lmu|le mans)/.test(gameRaw) ? 'lmu' : /^(acc|assetto)/.test(gameRaw) ? 'acc' : null;
+    const track = get('circuit') || get('track');
+    const car = get('car');
+    if (!game || !track || !car) { skipped++; return; }
+
+    let ms = null;
+    const msRaw = get('lap_ms');
+    if (msRaw && isFinite(+msRaw) && +msRaw > 0) ms = Math.round(+msRaw);
+    if (ms == null) ms = parseTime(get('lap_time'));
+    if (ms == null) { skipped++; return; }
+
+    const id = get('id') || uid();
+    if (existing.has(id)) { skipped++; return; }
+    existing.add(id);
+
+    // register unknown circuits and cars so the dropdowns stay complete
+    if (!trackList(game).some(t => t.n === track)) {
+      state.custom[game].tracks.push({ n: track, c: get('country') });
+    }
+    if (!carList(game).some(c2 => c2.n === car)) {
+      state.custom[game].cars.push({ n: car, k: get('class') || 'Other' });
+    }
+
+    state.laps.push({
+      id,
+      created: Date.now() + added,
+      game,
+      track,
+      car,
+      cls: get('class') || carClass(game, car),
+      lapMs: ms,
+      session: SESSIONS.includes(get('session')) ? get('session') : (get('session') || 'Practice'),
+      cond: get('conditions') || get('condition') || 'Dry',
+      date: /^\d{4}-\d{2}-\d{2}$/.test(get('date')) ? get('date') : todayISO(),
+      notes: get('notes')
+    });
+    added++;
+  });
+
+  return { added, skipped };
+}
+
+function ingestJSON(text) {
+  let p;
+  try { p = JSON.parse(text); } catch (e) { return { added: 0, skipped: 0, error: 'Not valid JSON' }; }
+  const laps = Array.isArray(p) ? p : (p && Array.isArray(p.laps) ? p.laps : null);
+  if (!laps) return { added: 0, skipped: 0, error: 'No laps found in file' };
+
+  const existing = new Set(state.laps.map(l => l.id));
+  let added = 0, skipped = 0;
+
+  laps.forEach(l => {
+    if (!l || typeof l.lapMs !== 'number' || !l.game || !l.track || !l.car) { skipped++; return; }
+    if (!LIB[l.game]) { skipped++; return; }
+    if (existing.has(l.id)) { skipped++; return; }
+    existing.add(l.id);
+    state.laps.push({
+      id: l.id || uid(),
+      created: l.created || Date.now(),
+      game: l.game,
+      track: l.track,
+      car: l.car,
+      cls: l.cls || carClass(l.game, l.car),
+      lapMs: Math.round(l.lapMs),
+      session: l.session || 'Practice',
+      cond: l.cond || 'Dry',
+      date: l.date || todayISO(),
+      notes: l.notes || '',
+      ...(l.sample ? { sample: true } : {})
+    });
+    added++;
+  });
+
+  if (p && p.custom) {
+    ['lmu', 'acc'].forEach(g => {
+      const src = p.custom[g] || {};
+      (src.tracks || []).forEach(t => {
+        if (t && t.n && !trackList(g).some(x => x.n === t.n)) state.custom[g].tracks.push({ n: t.n, c: t.c || '' });
+      });
+      (src.cars || []).forEach(c => {
+        if (c && c.n && !carList(g).some(x => x.n === c.n)) state.custom[g].cars.push({ n: c.n, k: c.k || 'Other' });
+      });
+    });
+  }
+
+  return { added, skipped };
+}
+
+$('#btn-import').addEventListener('click', () => $('#file-input').click());
+
+$('#file-input').addEventListener('change', e => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const text = String(reader.result || '');
+    const isJSON = text.trim().startsWith('{') || text.trim().startsWith('[');
+    const res = isJSON ? ingestJSON(text) : ingestCSV(text);
+    e.target.value = '';
+    if (res.error) { toast(res.error, 'err'); return; }
+    save();
+    resetForm(); setGame(formGame);
+    renderAll();
+    if (res.added) {
+      toast('Imported ' + res.added + (res.added === 1 ? ' lap' : ' laps') + (res.skipped ? ' · ' + res.skipped + ' skipped' : ''));
+    } else {
+      toast('Nothing new to import' + (res.skipped ? ' · ' + res.skipped + ' rows skipped' : ''), 'warn');
+    }
+  };
+  reader.readAsText(file);
+});
+
+/* ---- sample data ---- */
+const SAMPLE_PLAN = [
+  { game: 'lmu', track: 'Circuit de la Sarthe', car: 'Ferrari 499P', base: 212400, gain: 5200, n: 8 },
+  { game: 'lmu', track: 'Circuit de Spa-Francorchamps', car: 'Toyota GR010 Hybrid', base: 122800, gain: 3100, n: 7 },
+  { game: 'lmu', track: 'Autodromo Nazionale Monza', car: 'Porsche 963', base: 97600, gain: 2400, n: 6 },
+  { game: 'acc', track: 'Spa-Francorchamps', car: 'Ferrari 296 GT3', base: 138900, gain: 3400, n: 7 },
+  { game: 'acc', track: 'Monza', car: 'Porsche 992 GT3 R', base: 108700, gain: 2200, n: 6 },
+  { game: 'acc', track: 'Nürburgring GP', car: 'BMW M4 GT3', base: 114900, gain: 2600, n: 6 }
+];
+
+$('#btn-sample').addEventListener('click', async () => {
+  const existing = state.laps.filter(l => l.sample);
+  if (existing.length) {
+    const ok = await ask({
+      title: 'Remove sample data',
+      body: 'Delete all ' + existing.length + ' synthetic sample laps? Your own entries are untouched.',
+      ok: 'Remove',
+      danger: true
+    });
+    if (!ok) return;
+    state.laps = state.laps.filter(l => !l.sample);
+    save(); resetForm(); setGame(formGame); renderAll();
+    toast('Sample data removed', 'warn');
+    return;
+  }
+
+  const now = Date.now();
+  const sessions = ['Practice', 'Hotlap', 'Qualifying', 'Race', 'Test'];
+  const conds = ['Dry', 'Dry', 'Dry', 'Damp', 'Mixed'];
+  let k = 0;
+
+  SAMPLE_PLAN.forEach((plan, pi) => {
+    for (let i = 0; i < plan.n; i++) {
+      const t = i / Math.max(1, plan.n - 1);
+      const noise = (Math.sin(i * 7.13 + pi * 2.7) * 0.5 + 0.5 - 0.42) * 900;
+      const ms = Math.round(plan.base - plan.gain * (1 - Math.pow(1 - t, 1.6)) + noise);
+      const daysAgo = Math.round((1 - t) * 150) + pi * 2;
+      const d = new Date(now - daysAgo * 86400000);
+      state.laps.push({
+        id: 'sample-' + pi + '-' + i,
+        created: now - daysAgo * 86400000 + k,
+        sample: true,
+        game: plan.game,
+        track: plan.track,
+        car: plan.car,
+        cls: carClass(plan.game, plan.car),
+        lapMs: ms,
+        session: sessions[(i + pi) % sessions.length],
+        cond: conds[(i + pi * 2) % conds.length],
+        date: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'),
+        notes: i === plan.n - 1 ? 'Sample lap' : ''
+      });
+      k++;
+    }
+  });
+
+  save(); resetForm(); setGame(formGame); renderAll();
+  toast('Sample data loaded — remove it any time');
+});
+
+$('#btn-clear').addEventListener('click', async () => {
+  if (!state.laps.length) { toast('Nothing to delete', 'warn'); return; }
+  const ok = await ask({
+    title: 'Delete everything',
+    body: 'This removes all <strong>' + state.laps.length + '</strong> laps from this browser. Export a backup first if you might want them back.',
+    ok: 'Delete all',
+    danger: true
+  });
+  if (!ok) return;
+  state.laps = [];
+  save(); resetForm(); setGame(formGame); renderAll();
+  toast('All laps deleted', 'warn');
+});
+
+/* ---- library additions ---- */
+$$('[data-add]').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const kind = btn.dataset.add;
+    if (kind === 'track') {
+      const res = await ask({
+        title: 'Add circuit',
+        body: 'Pick which sim this circuit belongs to.',
+        fields: [
+          { label: 'Game', type: 'select', options: ['LMU', 'ACC'] },
+          { label: 'Circuit name', placeholder: 'e.g. Sepang International Circuit' },
+          { label: 'Country', placeholder: 'e.g. Malaysia' }
+        ],
+        ok: 'Add circuit'
+      });
+      if (!res) return;
+      const game = res[0] === 'LMU' ? 'lmu' : 'acc';
+      const name = res[1];
+      if (!name) { toast('Name required', 'err'); return; }
+      if (trackList(game).some(t => t.n.toLowerCase() === name.toLowerCase())) { toast('Circuit already exists', 'warn'); return; }
+      state.custom[game].tracks.push({ n: name, c: res[2] || '' });
+      save(); setGame(formGame); renderAll();
+      toast('Circuit added to ' + LIB[game].short);
+    } else {
+      const res = await ask({
+        title: 'Add car',
+        body: 'Pick which sim this car belongs to.',
+        fields: [
+          { label: 'Game', type: 'select', options: ['LMU', 'ACC'] },
+          { label: 'Car name', placeholder: 'e.g. Aston Martin Vantage GT3' },
+          { label: 'Class', placeholder: 'e.g. GT3, LMGT3, Hypercar' }
+        ],
+        ok: 'Add car'
+      });
+      if (!res) return;
+      const game = res[0] === 'LMU' ? 'lmu' : 'acc';
+      const name = res[1];
+      if (!name) { toast('Name required', 'err'); return; }
+      if (carList(game).some(c => c.n.toLowerCase() === name.toLowerCase())) { toast('Car already exists', 'warn'); return; }
+      state.custom[game].cars.push({ n: name, k: res[2] || 'Other' });
+      save(); setGame(formGame); renderAll();
+      toast('Car added to ' + LIB[game].short);
+    }
+  });
+});
+
+/* ============================================================
+   NAV
+   ============================================================ */
+function showView(name) {
+  $$('.view').forEach(v => v.classList.toggle('is-active', v.id === 'v-' + name));
+  $$('.rail-item').forEach(b => {
+    if (b.dataset.view === name) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
+  });
+  if (name === 'analysis') { fillChartFilters(); renderChart(); renderCmp(); }
+  if (name === 'data') renderStorage();
+}
+$$('.rail-item').forEach(b => b.addEventListener('click', () => showView(b.dataset.view)));
+
+document.addEventListener('keydown', e => {
+  if (e.target.matches('input,select,textarea')) return;
+  if (e.key === '1') showView('log');
+  if (e.key === '2') showView('timing');
+  if (e.key === '3') showView('analysis');
+  if (e.key === '4') showView('data');
+  if (e.key === 'n' || e.key === 'N') { showView('log'); $('#f-time').focus(); }
+});
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if ($('#v-analysis').classList.contains('is-active')) renderChart();
+  }, 160);
+});
+
+function renderAll() {
+  renderChrome();
+  renderLaps();
+  renderTiming();
+  renderSummary();
+  fillChartFilters();
+  renderChart();
+  fillCmpCars();
+  renderCmp();
+  renderStorage();
+  // keep session filter options in sync
+  const sf = $('#lf-session');
+  const cur = sf.value;
+  sf.innerHTML = '<option value="">All sessions</option>' +
+    SESSIONS.map(s => '<option value="' + esc(s) + '">' + esc(s) + '</option>').join('');
+  if (SESSIONS.includes(cur)) sf.value = cur;
+}
+
+function boot() {
+  load();
+  fillSessions();
+  fillConditions();
+  $('#f-date').value = todayISO();
+  setGame(lastUsed.game || 'lmu');
+  fillTracks();
+  fillCars();
+  resetForm();
+  renderAll();
+}
+
+boot();
+
+</script>
+</body>
+</html>

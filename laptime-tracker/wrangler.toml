@@ -1,0 +1,11 @@
+name = "laptime-tracker"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+
+# index.html is imported as text by worker.js, so it stays a single
+# source of truth you can also open directly from disk.
+
+[[rules]]
+type = "Text"
+globs = ["**/*.html"]
+fallthrough = true

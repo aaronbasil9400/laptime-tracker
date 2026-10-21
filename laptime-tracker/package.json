@@ -1,0 +1,14 @@
+{
+  "name": "laptime-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Personal lap time tracker for Le Mans Ultimate and Assetto Corsa Competizione.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
