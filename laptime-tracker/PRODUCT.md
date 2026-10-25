@@ -14,7 +14,8 @@ Single-file static HTML/CSS/JS. One self-contained `index.html` with no build st
 
 A single sim racing driver (the owner) who races Le Mans Ultimate and Assetto Corsa Competizione on PC. They log lap times after a session — typically alt-tabbed out of the sim or on a phone next to the rig — and come back later to see whether they are actually getting faster at a given track and car combination.
 
-Single-user by design. No accounts, no sharing, no multi-driver support.
+Single-owner by design. Cloudflare Access handles sign-in for the hosted version;
+there is no application account system, sharing, or multi-driver support.
 
 ## Product Purpose
 
@@ -37,7 +38,7 @@ Telemetry tools analyze a single lap in depth. This tracks the long arc across t
 - The user already knows the lap time; they are transcribing it, not discovering it. Entry speed matters more than entry cleverness.
 - Lap times are read off a sim in `M:SS.mmm` format (e.g. `1:43.271`). Input must accept that format natively.
 - Track and car rosters differ per game and expand with DLC releases; LMU in particular is still receiving content through 2026.
-- Hosting target is a Cloudflare Worker serving the file as a static asset.
+- Hosting target is a Cloudflare Worker serving the interface and a D1-backed API.
 
 ## Capabilities and Constraints
 
@@ -54,15 +55,22 @@ Telemetry tools analyze a single lap in depth. This tracks the long arc across t
 - Filtering by game, track, car, and session type.
 
 **Confirmed constraints:**
-- Data persists in browser `localStorage`. No backend, no database, no sync.
-- Because storage is per-browser, the export path doubles as the backup and device-transfer mechanism. This must be obvious in the UI, not buried.
+- The hosted version uses D1 as its saved record and Cloudflare Access restricted to
+  aaronbasil9400@gmail.com. The Worker checks the authenticated email on every request.
+- Browser `localStorage` caches the hosted record and retains pending changes. Visible
+  status distinguishes device-only changes from confirmed cloud saves. Stale revisions
+  cause a conflict; they never overwrite newer changes from another device.
+- Opening the standalone HTML file keeps browser-only operation without API requests.
+- JSON export is an independent backup in either mode and must remain easy to find.
 - Must work well on both desktop and mobile.
-- No external network requests at runtime — no CDN fonts, no analytics, no chart library. Everything inlined so the file works offline and from `file://`.
+- No CDN fonts, analytics, or chart library. The hosted version uses same-origin API
+  requests; the standalone file works offline and from file://.
 
 **Explicitly undecided:**
 - Sector times (S1/S2/S3) were offered and not selected. Not in scope.
 - Gap-to-benchmark comparison was offered and not selected. Not in scope.
-- A future migration to Cloudflare D1 is possible but not planned; `localStorage` was chosen deliberately over a D1-ready abstraction.
+- D1 cloud storage was explicitly requested after the initial local-only build. Production
+  deployment requires the intended account, a real D1 binding, and the Access policy.
 
 ## Evidence on Hand
 
@@ -73,7 +81,12 @@ Telemetry tools analyze a single lap in depth. This tracks the long arc across t
 
 Car lists are bundled from each game's known rosters. Both roster types must remain user-extensible, since LMU content is still shipping.
 
-No real lap time data exists yet. Any lap times shown in an empty-state or demo context are synthetic and must be labeled or removable — they must never be mistaken for the user's own record.
+The owner supplied 56 real LMU laps across 10 circuits and 22 ACC laps across 8 circuits.
+The imports are preserved at data/personal-lmu-laptimes-2026-10-25.json and
+data/personal-acc-laptimes-2026-10-25.json, including the custom LMU Lexus RC F GT3.
+Lap dates, sessions and conditions were not supplied and remain unrecorded. The Algarve
+BMW/911 abbreviations were mapped to BMW M4 GT3 and Porsche 911 GT3 R LMGT3.
+Synthetic sample data remains separately labeled and removable.
 
 ## Product Principles
 

@@ -6,7 +6,11 @@
   "description": "Personal lap time tracker for Le Mans Ultimate and Assetto Corsa Competizione.",
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:migrate:remote": "wrangler d1 migrations apply DB --remote --profile laptime-tracker",
+    "db:seed:prepare": "node scripts/seed-d1.mjs",
+    "test:cloud": "node scripts/test-cloud.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"

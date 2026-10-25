@@ -94,12 +94,22 @@ reads as instrument panel, not decoration.
 - **Plate head** — 44px min-height, `h3` title, right-aligned note.
 - **Input** — 44px min-height, `--plate-2`, 1px `--rule-2`. Focus swaps to `--plate-3`
   with a lighter border. No glow, no ring beyond the global focus-visible outline.
+- **Roster search** — native text inputs with datalist suggestions. Use 16px text so
+  phone browsers do not zoom on focus. Only known circuit and car names can be saved;
+  new roster entries are added through Data.
+- **Recent combination** — up to three compact, horizontally scrollable choices for
+  the selected game. Circuit and car identify the choice; its selected border reflects
+  the active fields. This cuts repeat setup without adding a separate preset editor.
+- **Session details** — native disclosure showing session, conditions and date while
+  closed. Keep defaults visible so hiding fields never hides the context being saved.
 - **Segmented control** — used for game selection. Pressed state inverts to `--ink` on
   `--ground`.
 - **Button** — 44px, uppercase 12px 700 with 0.1em tracking. Primary inverts to solid
   `--ink`. Ghost for everything secondary.
 - **Lap row** — three-column grid: time, meta, actions. Detail line (session, conditions,
-  date, class, notes) sits below on mobile, and reveals on hover on desktop.
+  date, class, notes) remains visible on every device, including keyboard navigation.
+- **History filters** — native disclosure with the active filter count always visible.
+  Game, circuit, car and session narrow the list; clearing filters recovers empty results.
 - **Timing group** — disclosure row, circuit name plus lap/car counts, best time in purple
   at right, chevron rotates 90° on open.
 - **Stat strip** — 2×2 on mobile, 1×4 on desktop, hairline divided.
@@ -119,7 +129,8 @@ distrust.
   input in red before submit.
 - On blur, a valid time reformats to canonical `M:SS.mmm`.
 - After submit the form clears the time but keeps circuit and car, and `lastUsed` persists
-  to `localStorage` — so the second lap of a stint is one field and Enter.
+  to `localStorage`, including session and conditions, so the second lap is one field
+  and Enter. Return focus to the time field. Cancel edit only appears while editing.
 - Destructive actions always route through a native `<dialog>` with an explicit verb.
 - Empty states explain what will appear and never show fake data unlabelled.
 
@@ -128,11 +139,15 @@ distrust.
 - Times always monospaced and tabular. Never proportional.
 - Personal bests in `--purple`, everywhere, consistently.
 - Deltas signed with a true minus `−`, three decimals, prefixed `+`/`−`.
-- Charts are hand-drawn SVG — no library. Progression shows each lap as a hairline
-  polyline with dots, plus a dashed purple best-so-far line. Axis labels at 9–10px
-  inside the SVG are chart furniture, not UI text.
-- Consistency bars are relative to the loosest circuit, so the worst case is always full
-  width and every other bar is read against it.
+- Charts are hand-drawn SVG, with 11px axis labels and enough left inset for full lap
+  times on phones. A lighter neutral line shows each lap; a dashed purple line shows
+  the best so far. Color and line style distinguish the series.
+- Median change belongs to the selected game, circuit, car and conditions. Require six
+  laps, compare the latest third with the earliest third, and explain that negative means
+  faster. Global summary statistics describe record size rather than claim improvement.
+- Consistency groups separate cars and conditions. Require three laps before showing a
+  spread bar; scale bars relative to the loosest eligible group. Each group is a keyboard
+  accessible button opening its exact progression, including conditions.
 
 ## Accessibility
 

@@ -1,6 +1,28 @@
 name = "laptime-tracker"
+account_id = "b94afbadc132814062291afba7c06c0c"
 main = "worker.js"
 compatibility_date = "2026-10-01"
+
+[vars]
+OWNER_EMAIL = "aaronbasil9400@gmail.com"
+
+[observability]
+enabled = true
+
+[observability.traces]
+enabled = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "laptime-tracker-db"
+database_id = "4dfefea6-2353-4c7c-a209-1bb839f7c9f8"
+migrations_dir = "migrations"
+
+[access.dev]
+aud = "local-laptime-tracker"
+
+[access.dev.identity]
+email = "aaronbasil9400@gmail.com"
 
 # index.html is imported as text by worker.js, so it stays a single
 # source of truth you can also open directly from disk.

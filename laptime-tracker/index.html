@@ -42,6 +42,7 @@
 }
 
 *,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
 body{
@@ -139,6 +140,13 @@ main{
   flex:1 1 auto;min-width:0;
   padding:16px 14px calc(78px + env(safe-area-inset-bottom));
 }
+.sync-panel{max-width:1200px;margin:0 auto 16px;padding:12px 14px;border:1px solid var(--rule-2);background:var(--plate);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sync-panel > div{flex:1 1 220px;min-width:0}
+.sync-panel strong{font-size:13px;color:var(--ink)}
+.sync-panel p{font-size:12px;color:var(--ink-2);margin-top:3px;overflow-wrap:anywhere}
+.sync-panel[data-state="error"],.sync-panel[data-state="conflict"]{border-color:var(--amber)}
+.sync-panel .btn{min-height:44px}
+button:disabled,input:disabled,select:disabled{opacity:.55;cursor:wait}
 .view{display:none;flex-direction:column;gap:14px;max-width:1200px;margin:0 auto;width:100%}
 .view.is-active{display:flex}
 
@@ -200,12 +208,13 @@ main{
   border:1px solid var(--rule-2);
   border-radius:var(--r);
   color:var(--ink);
-  font-size:15px;
+  font-size:16px;
   transition:border-color var(--t-step) linear,background var(--t-step) linear;
 }
 .inp::placeholder{color:var(--ink-4)}
 .inp:hover{border-color:var(--rule-3)}
-.inp:focus{outline:none;border-color:var(--ink-2);background:var(--plate-3)}
+.inp:focus{border-color:var(--ink-2);background:var(--plate-3)}
+.inp:focus-visible{outline:2px solid var(--purple);outline-offset:2px}
 .inp.is-bad{border-color:var(--red)}
 select.inp{
   cursor:pointer;
@@ -236,7 +245,7 @@ select.inp optgroup{background:#111418;color:var(--ink-3);font-size:12px}
 /* segmented control */
 .seg{display:flex;background:var(--plate-2);border:1px solid var(--rule-2);border-radius:var(--r);overflow:hidden}
 .seg button{
-  flex:1 1 0;min-width:0;min-height:42px;padding:8px 6px;
+  flex:1 1 0;min-width:0;min-height:44px;padding:8px 6px;
   font-size:12px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;
   color:var(--ink-3);
   border-right:1px solid var(--rule-2);
@@ -266,6 +275,35 @@ select.inp optgroup{background:#111418;color:var(--ink-3);font-size:12px}
 
 .form-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .form-actions .btn-primary{flex:1 1 150px}
+.entry-details{border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.entry-details summary,.history-filters summary{cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--ink-2);font-size:13px;list-style:none}
+.entry-details summary::after,.history-filters summary::after{content:'+';font-family:var(--font-mono);font-size:18px;color:var(--ink-3)}
+.entry-details[open] summary::after,.history-filters[open] summary::after{content:'−'}
+.entry-details summary::-webkit-details-marker,.history-filters summary::-webkit-details-marker{display:none}
+.entry-details summary span{display:flex;flex-direction:column;gap:2px}
+.entry-details summary small{font-size:12px;color:var(--ink-3)}
+.entry-details .details-fields{display:grid;gap:13px;padding:6px 0 15px}
+.entry-help{font-size:12px;color:var(--ink-3);line-height:1.6}
+.entry-help kbd{font-family:var(--font-mono);color:var(--ink-2)}
+#progression-panel{scroll-margin-top:76px}
+.plate-head{flex-wrap:wrap}
+@media (min-width:360px) and (max-width:559px){.frow.entry-combination{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:359px){.inp-time{font-size:27px;padding:12px}.time-echo{right:12px}}
+.recent-combos{display:flex;flex-direction:column;gap:6px}
+.recent-combos > span{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-3)}
+.recent-combos-list{display:flex;gap:6px;overflow:auto;padding:2px 2px 5px}
+.combo-btn{flex:0 0 165px;text-align:left;border:1px solid var(--rule-2);padding:9px 10px;min-height:52px;background:var(--plate-2);border-radius:var(--r)}
+.combo-btn:hover{background:var(--plate-3);border-color:var(--rule-3)}
+.combo-btn[aria-pressed="true"]{border-color:var(--ink-2)}
+.combo-btn strong,.combo-btn small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.combo-btn strong{font-size:12px;color:var(--ink-2);font-weight:600}
+.combo-btn small{font-size:11px;color:var(--ink-3);margin-top:2px}
+.history-filters summary{padding:0 14px;border-bottom:1px solid var(--rule)}
+.history-filters .filter-bar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.history-filters .field{min-width:0}
+.history-filters .field label{font-size:11px}
+.history-filters .btn{align-self:end}
+.filter-count{font-size:11px;color:var(--ink-3);margin-left:auto}
 
 .frow{display:grid;grid-template-columns:1fr;gap:13px}
 @media (min-width:560px){.frow{grid-template-columns:1fr 1fr}}
@@ -302,16 +340,17 @@ select.inp optgroup{background:#111418;color:var(--ink-3);font-size:12px}
 .lap-detail span{white-space:nowrap}
 .lap-detail .tag{color:var(--ink-3)}
 .lap-detail .note{text-transform:none;letter-spacing:.01em;color:var(--ink-3);white-space:normal}
+.lap-detail .note{overflow-wrap:anywhere;min-width:0}
 .lap-actions{grid-area:actions;display:flex;gap:2px;flex:0 0 auto}
 .icon-btn{
-  width:40px;height:40px;display:grid;place-items:center;
+  width:44px;height:44px;display:grid;place-items:center;
   border:1px solid transparent;border-radius:var(--r);color:var(--ink-4);
   transition:color var(--t-step) linear,border-color var(--t-step) linear,background var(--t-step) linear;
 }
 .icon-btn:hover{color:var(--ink);border-color:var(--rule-2);background:var(--plate-3)}
 .icon-btn.danger:hover{color:var(--red);border-color:rgba(255,90,95,.4)}
 .icon-btn svg{width:15px;height:15px;display:block}
-@media (pointer:coarse){.icon-btn{width:var(--tap);height:var(--tap)}}
+@media (pointer:coarse){.btn-sm{min-height:var(--tap)}}
 
 /* ============================================================
    TIMING VIEW
@@ -392,7 +431,11 @@ select.inp optgroup{background:#111418;color:var(--ink-3);font-size:12px}
   padding:12px 14px;border-top:1px solid var(--rule);align-items:center;
 }
 .cmp-row:first-child{border-top:0}
-.cmp-name{min-width:0;display:flex;flex-direction:column;gap:1px}
+.cmp-row{width:100%;text-align:left;background:transparent}
+.cmp-row:hover,.cmp-row:focus-visible{background:var(--plate-2)}
+.cmp-link{font-family:var(--font-ui);font-size:11px;color:var(--ink-3);display:block;margin-top:4px}
+.cmp-row:hover .cmp-link,.cmp-row:focus-visible .cmp-link{color:var(--ink)}
+.cmp-name{min-width:0;display:flex;flex-direction:column;gap:1px;overflow-wrap:anywhere}
 .cmp-name strong{font-size:13px;font-weight:600;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.35}
 .cmp-name em{font-style:normal;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-4);font-weight:600}
 .cmp-time{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:15px;font-weight:600;color:var(--ink);text-align:right}
@@ -518,9 +561,8 @@ dialog.confirm::backdrop{background:rgba(6,7,9,.74);backdrop-filter:blur(3px)}
 
   .plate-body{padding:16px}
   .form-grid{gap:15px}
-  .lap{grid-template-columns:96px 1fr auto;grid-template-areas:"time meta actions";padding:11px 16px}
-  .lap-detail{grid-area:auto;display:none}
-  .lap:hover .lap-detail{display:flex}
+  .lap{grid-template-columns:96px 1fr auto;grid-template-areas:"time meta actions" "detail detail detail";padding:13px 16px}
+  .lap-detail{display:flex;padding-top:7px;gap:4px 12px}
 }
 @media (min-width:900px) and (hover:none){
   .lap-detail{display:flex}
@@ -589,11 +631,18 @@ dialog.confirm::backdrop{background:rgba(6,7,9,.74);backdrop-filter:blur(3px)}
 </nav>
 
 <main>
+  <div class="sync-panel" id="sync-panel" role="status" aria-live="polite" hidden>
+    <div><strong id="sync-label">Connecting to your cloud record</strong><p id="sync-detail">Your local copy stays available while connecting.</p></div>
+    <button class="btn" id="sync-retry" type="button" hidden>Retry sync</button>
+    <button class="btn" id="sync-backup" type="button" hidden>Back up local changes</button>
+    <button class="btn" id="sync-reload" type="button" hidden>Load cloud record</button>
+    <button class="btn" id="sync-signin" type="button" hidden>Sign in again</button>
+  </div>
   <!-- ================= LOG ================= -->
   <section class="view is-active" id="v-log" aria-labelledby="h-log">
     <div class="view-head">
       <h2 id="h-log">Log a lap</h2>
-      <p>Type the time straight from the sim. Everything else is remembered from your last entry.</p>
+      <p id="log-intro">Choose your circuit and car, then log your time. Your next lap starts with the same combination.</p>
     </div>
 
     <div class="plate">
@@ -611,25 +660,38 @@ dialog.confirm::backdrop{background:rgba(6,7,9,.74);backdrop-filter:blur(3px)}
             </div>
           </div>
 
+          <div class="recent-combos" id="recent-combos" hidden>
+            <span>Use a recent combination</span>
+            <div class="recent-combos-list" id="recent-combos-list"></div>
+          </div>
+
           <div class="field">
             <label for="f-time">Lap time</label>
             <div class="time-field">
-              <input class="inp inp-time" id="f-time" inputmode="decimal" placeholder="1:43.271" spellcheck="false" autocapitalize="off" aria-describedby="f-time-echo">
+              <input class="inp inp-time" id="f-time" inputmode="decimal" enterkeyhint="done" placeholder="1:43.271" spellcheck="false" autocapitalize="off" aria-describedby="f-time-echo time-hint">
               <div class="time-echo" id="f-time-echo">M:SS.mmm</div>
             </div>
+            <p class="entry-help" id="time-hint">Use 1:43.271 or 103.271 seconds.</p>
           </div>
 
-          <div class="frow">
+          <div class="frow entry-combination">
             <div class="field">
               <label for="f-track">Circuit</label>
-              <select class="inp" id="f-track"></select>
+              <input class="inp" id="f-track" list="f-track-options" type="search" placeholder="Find a circuit" spellcheck="false" aria-describedby="combo-hint">
+              <datalist id="f-track-options"></datalist>
             </div>
             <div class="field">
               <label for="f-car">Car</label>
-              <select class="inp" id="f-car"></select>
+              <input class="inp" id="f-car" list="f-car-options" type="search" placeholder="Find a car" spellcheck="false" aria-describedby="combo-hint">
+              <datalist id="f-car-options"></datalist>
             </div>
           </div>
 
+          <p class="sr" id="combo-hint">Type to search the roster, or choose a suggestion.</p>
+
+          <details class="entry-details" id="entry-details">
+            <summary><span>Session details <small id="entry-details-summary">Practice · Dry · Today</small></span></summary>
+            <div class="details-fields">
           <div class="frow">
             <div class="field">
               <label for="f-session">Session</label>
@@ -652,10 +714,14 @@ dialog.confirm::backdrop{background:rgba(6,7,9,.74);backdrop-filter:blur(3px)}
             </div>
           </div>
 
+            </div>
+          </details>
+
           <div class="form-actions">
             <button class="btn btn-primary" type="submit" id="f-submit">Add lap</button>
             <button class="btn" type="button" id="f-cancel" hidden>Cancel edit</button>
           </div>
+          <p class="entry-help">Press <kbd>Enter</kbd> to save a lap. <kbd>N</kbd> returns to the time field. Data stays in this browser; back it up in Data.</p>
         </form>
       </div>
     </div>
@@ -665,9 +731,11 @@ dialog.confirm::backdrop{background:rgba(6,7,9,.74);backdrop-filter:blur(3px)}
         <h3>Laps</h3>
         <span class="head-note" id="laps-note">0 entries</span>
       </div>
+      <details class="history-filters" id="lap-filters" hidden>
+      <summary>Filter &amp; sort <span class="filter-count" id="filter-count">All laps</span></summary>
       <div class="filter-bar">
         <div class="field">
-          <label for="lf-game" class="sr">Filter by game</label>
+          <label for="lf-game">Game</label>
           <select class="inp" id="lf-game">
             <option value="">All games</option>
             <option value="lmu">Le Mans Ultimate</option>
@@ -675,18 +743,28 @@ dialog.confirm::backdrop{background:rgba(6,7,9,.74);backdrop-filter:blur(3px)}
           </select>
         </div>
         <div class="field">
-          <label for="lf-session" class="sr">Filter by session</label>
+          <label for="lf-track">Circuit</label>
+          <select class="inp" id="lf-track"><option value="">All circuits</option></select>
+        </div>
+        <div class="field">
+          <label for="lf-car">Car</label>
+          <select class="inp" id="lf-car"><option value="">All cars</option></select>
+        </div>
+        <div class="field">
+          <label for="lf-session">Session</label>
           <select class="inp" id="lf-session"><option value="">All sessions</option></select>
         </div>
         <div class="field">
-          <label for="lf-sort" class="sr">Sort</label>
+          <label for="lf-sort">Sort</label>
           <select class="inp" id="lf-sort">
             <option value="recent">Newest first</option>
             <option value="fast">Fastest first</option>
             <option value="track">By circuit</option>
           </select>
         </div>
+        <button class="btn" id="lf-clear" type="button">Clear filters</button>
       </div>
+      </details>
       <div id="laps-host"></div>
     </div>
   </section>
@@ -739,23 +817,27 @@ dialog.confirm::backdrop{background:rgba(6,7,9,.74);backdrop-filter:blur(3px)}
       <dl class="stat-strip" id="summary-host"></dl>
     </div>
 
-    <div class="plate">
+    <div class="plate" id="progression-panel">
       <div class="plate-head">
-        <h3>Progression</h3>
-        <span class="head-note">lap time over time</span>
+        <h3 id="progression-title" tabindex="-1">Progression</h3>
+        <span class="head-note">same car &amp; conditions</span>
       </div>
       <div class="filter-bar">
         <div class="field">
-          <label for="cf-game" class="sr">Game</label>
+          <label for="cf-game">Game</label>
           <select class="inp" id="cf-game"></select>
         </div>
         <div class="field">
-          <label for="cf-track" class="sr">Circuit</label>
+          <label for="cf-track">Circuit</label>
           <select class="inp" id="cf-track"></select>
         </div>
         <div class="field">
-          <label for="cf-car" class="sr">Car</label>
+          <label for="cf-car">Car</label>
           <select class="inp" id="cf-car"></select>
+        </div>
+        <div class="field">
+          <label for="cf-cond">Conditions</label>
+          <select class="inp" id="cf-cond"></select>
         </div>
       </div>
       <div id="chart-host"></div>
@@ -763,7 +845,7 @@ dialog.confirm::backdrop{background:rgba(6,7,9,.74);backdrop-filter:blur(3px)}
 
     <div class="plate">
       <div class="plate-head">
-        <h3>Circuit comparison</h3>
+        <h3>Consistency by combination</h3>
         <span class="head-note" id="cmp-note">consistency by circuit</span>
       </div>
       <div class="filter-bar">
@@ -813,7 +895,7 @@ dialog.confirm::backdrop{background:rgba(6,7,9,.74);backdrop-filter:blur(3px)}
     <div class="plate">
       <div class="plate-head">
         <h3>Import</h3>
-        <span class="head-note">merge or replace</span>
+        <span class="head-note">merge into your record</span>
       </div>
       <div class="plate-body">
         <div class="form-actions">
@@ -997,14 +1079,25 @@ const LIB = {
   }
 };
 
-const SESSIONS = ['Practice', 'Qualifying', 'Race', 'Hotlap', 'Test'];
-const CONDITIONS = ['Dry', 'Damp', 'Wet', 'Mixed', 'Night — dry', 'Night — wet'];
+const SESSIONS = ['Practice', 'Qualifying', 'Race', 'Hotlap', 'Test', 'Not recorded'];
+const CONDITIONS = ['Dry', 'Damp', 'Wet', 'Mixed', 'Night — dry', 'Night — wet', 'Not recorded'];
 
 /* ============================================================
    STATE
    ============================================================ */
 const KEY = 'laptimes.v1';
 const LASTKEY = 'laptimes.last';
+const CLOUDKEY = 'laptimes.cloud';
+const cloudEnabled = document.documentElement.dataset.cloudStorage === 'd1';
+let cloudRevision = null;
+let cloudPending = false;
+let cloudReady = false;
+let cloudConnecting = false;
+let cloudSaving = false;
+let cloudConflict = false;
+let localGeneration = 0;
+let cacheFailed = false;
+let storedRecordLoaded = false;
 
 let state = { v: 1, laps: [], custom: { lmu: { tracks: [], cars: [] }, acc: { tracks: [], cars: [] } } };
 let editingId = null;
@@ -1019,6 +1112,7 @@ function load() {
     if (raw) {
       const p = JSON.parse(raw);
       if (p && Array.isArray(p.laps)) {
+        storedRecordLoaded = true;
         state.laps = p.laps.filter(l => l && typeof l.lapMs === 'number');
         state.custom = {
           lmu: { tracks: [], cars: [] },
@@ -1033,22 +1127,171 @@ function load() {
   }
   try {
     const l = JSON.parse(localStorage.getItem(LASTKEY) || 'null');
-    if (l && l.game) lastUsed = l;
+    if (l && LIB[l.game]) lastUsed = { ...lastUsed, ...l };
   } catch (e) { /* ignore */ }
+  if (cloudEnabled) {
+    try {
+      const meta = JSON.parse(localStorage.getItem(CLOUDKEY) || 'null');
+      if (storedRecordLoaded && Number.isSafeInteger(meta?.revision) && meta.revision >= 0) cloudRevision = meta.revision;
+      cloudPending = storedRecordLoaded && meta?.pending === true;
+    } catch (e) { /* the first connection will merge the existing local record */ }
+  }
 }
 
 let saveTimer = null;
-function save() {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(state));
-    } catch (e) {
-      toast('Could not save — browser storage may be full', 'err');
-    }
-    try { localStorage.setItem(LASTKEY, JSON.stringify(lastUsed)); } catch (e) { /* ignore */ }
-  }, 60);
+function cacheRecord() {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(state));
+    localStorage.setItem(LASTKEY, JSON.stringify(lastUsed));
+    if (cloudEnabled) localStorage.setItem(CLOUDKEY, JSON.stringify({ revision: cloudRevision, pending: cloudPending }));
+    cacheFailed = false;
+  } catch (e) {
+    cacheFailed = true;
+    toast('Device storage is unavailable. Keep a JSON backup of your changes.', 'err');
+  }
 }
+
+function syncStatus(kind, label, detail, actions = {}) {
+  $('#sync-panel').hidden = !cloudEnabled;
+  $('#sync-panel').dataset.state = kind;
+  $('#sync-label').textContent = label;
+  $('#sync-detail').textContent = detail;
+  $('#sync-retry').hidden = !actions.retry;
+  $('#sync-backup').hidden = !actions.backup;
+  $('#sync-reload').hidden = !actions.reload;
+  $('#sync-signin').hidden = !actions.signin;
+  $('.tb-status span').textContent = kind === 'saved' ? 'Cloud saved' : 'Cloud sync pending';
+  $('.tb-status i').style.background = kind === 'saved' ? 'var(--green)' : 'var(--amber)';
+}
+
+function save() {
+  localGeneration++;
+  if (cloudEnabled) cloudPending = true;
+  cacheRecord();
+  clearTimeout(saveTimer);
+  if (cloudEnabled) {
+    if (!cloudConflict) syncStatus('pending', 'Changes saved on this device', 'Waiting to save your changes to D1.', { retry: true });
+    saveTimer = setTimeout(flushCloud, 250);
+  }
+}
+
+async function cloudRequest(method, payload) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+  try {
+    const response = await fetch('/api/state', {
+      method, credentials: 'same-origin', cache: 'no-store', redirect: 'error', signal: controller.signal,
+      ...(payload ? { headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) } : {})
+    });
+    if (response.status === 401 || response.status === 403) {
+      const error = new Error('Sign in with your allowed email to reconnect.');
+      error.signin = true;
+      throw error;
+    }
+    const result = await response.json();
+    if (!response.ok) {
+      const error = new Error(result.error || 'Cloud storage could not save your changes.');
+      error.conflict = response.status === 409;
+      error.invalid = response.status === 400;
+      throw error;
+    }
+    return result;
+  } finally { clearTimeout(timeout); }
+}
+
+function syncFailure(error) {
+  if (error.conflict) {
+    cloudConflict = true;
+    syncStatus('conflict', 'Another device has newer changes', 'Your local changes are kept here. Back them up before loading the cloud record.', { backup: true, reload: true });
+  } else {
+    syncStatus('error', cacheFailed ? 'Cloud and device saving need attention' : 'Cloud sync paused',
+      error.signin || error.invalid ? error.message : cacheFailed ? 'Keep this page open and download a backup. Cloud and device storage have not confirmed your save.' : 'Your local copy is kept here. Retry when connected; cloud saving has not completed.',
+      { retry: true, backup: true, signin: true });
+  }
+}
+
+function mergeInitialRecord(remote, local) {
+  const laps = new Map(remote.laps.map(lap => [lap.id, lap]));
+  local.laps.forEach(lap => { if (!laps.has(lap.id)) laps.set(lap.id, lap); });
+  const custom = {};
+  for (const game of ['lmu', 'acc']) {
+    custom[game] = {};
+    for (const kind of ['tracks', 'cars']) {
+      const entries = new Map((remote.custom?.[game]?.[kind] || []).map(entry => [entry.n, entry]));
+      (local.custom?.[game]?.[kind] || []).forEach(entry => { if (!entries.has(entry.n)) entries.set(entry.n, entry); });
+      custom[game][kind] = [...entries.values()];
+    }
+  }
+  return { v: 1, laps: [...laps.values()], custom };
+}
+
+async function connectCloud(discardLocal = false) {
+  if (!cloudEnabled || cloudConnecting || cloudSaving || (cloudConflict && !discardLocal)) return;
+  cloudConnecting = true;
+  if (!cloudReady || cloudPending || discardLocal) syncStatus('pending', 'Connecting to your cloud record', 'Your local copy stays available while connecting.');
+  try {
+    const remote = await cloudRequest('GET');
+    if (!remote.state || !Array.isArray(remote.state.laps) || !Number.isSafeInteger(remote.revision)) throw new Error('Unexpected cloud response');
+    if (!discardLocal && cloudPending && cloudRevision !== null && cloudRevision !== remote.revision) {
+      const error = new Error('Cloud revision changed'); error.conflict = true; throw error;
+    }
+    if (discardLocal || (!cloudPending && cloudRevision !== null)) {
+      state = remote.state;
+      cloudPending = false;
+    } else if (cloudRevision === null) {
+      state = mergeInitialRecord(remote.state, state);
+      cloudPending = JSON.stringify(state) !== JSON.stringify(remote.state);
+    }
+    cloudRevision = remote.revision;
+    cloudReady = true;
+    cloudConflict = false;
+    cacheRecord();
+    const track = $('#f-track').value, car = $('#f-car').value;
+    fillTracks(); fillCars();
+    $('#f-track').value = track; $('#f-car').value = car;
+    renderAll();
+    if (!cloudPending) syncStatus('saved', 'Saved to Cloudflare D1', cacheFailed ? 'Cloud record saved. Device caching is unavailable; download a backup.' : 'Your record is available on your other signed-in devices.', { backup: cacheFailed });
+  } catch (error) { syncFailure(error); }
+  finally {
+    cloudConnecting = false;
+    if (cloudReady && cloudPending && !cloudConflict) flushCloud();
+  }
+}
+
+async function flushCloud() {
+  if (!cloudEnabled || !cloudPending || cloudSaving || cloudConnecting || cloudConflict) return;
+  if (!cloudReady || cloudRevision === null) { connectCloud(); return; }
+  cloudSaving = true;
+  const generation = localGeneration;
+  const snapshot = JSON.parse(JSON.stringify(state));
+  syncStatus('pending', 'Saving to Cloudflare D1', 'Your changes remain on this device until the cloud confirms the save.');
+  let saved = false;
+  try {
+    const result = await cloudRequest('PUT', { revision: cloudRevision, state: snapshot });
+    if (!Number.isSafeInteger(result.revision)) throw new Error('Unexpected cloud response');
+    cloudRevision = result.revision;
+    cloudPending = localGeneration !== generation;
+    cacheRecord();
+    saved = true;
+    if (!cloudPending) syncStatus('saved', 'Saved to Cloudflare D1', cacheFailed ? 'Cloud record saved. Device caching is unavailable; download a backup.' : 'Your record is available on your other signed-in devices.', { backup: cacheFailed });
+  } catch (error) { syncFailure(error); }
+  finally {
+    cloudSaving = false;
+    if (saved && cloudPending && !cloudConflict) flushCloud();
+  }
+}
+
+$('#sync-retry').addEventListener('click', () => connectCloud());
+$('#sync-backup').addEventListener('click', () => download('laptimes-local-backup-' + stamp() + '.json', JSON.stringify(state, null, 2), 'application/json'));
+$('#sync-signin').addEventListener('click', () => { cacheRecord(); window.location.assign('/'); });
+$('#sync-reload').addEventListener('click', async () => {
+  const ok = await ask({ title: 'Load cloud record', body: 'This replaces the unsynced record on this device with the cloud version. Download a local backup first if you want to keep your unsynced changes.', ok: 'Load cloud record' });
+  if (ok) connectCloud(true);
+});
+window.addEventListener('online', () => { if (cloudEnabled && !cloudConflict) connectCloud(); });
+document.addEventListener('visibilitychange', () => { if (cloudEnabled && !document.hidden && !cloudConflict) connectCloud(); });
+window.addEventListener('beforeunload', () => { if (cloudEnabled && cloudPending) cacheRecord(); });
+if (cloudEnabled) setInterval(() => { if (!document.hidden && !cloudPending && !cloudConflict) connectCloud(); }, 30000);
 
 /* ============================================================
    TIME
@@ -1062,7 +1305,8 @@ function parseTime(str) {
     const mins = +m[1], secs = +m[2];
     if (secs >= 60) return null;
     const frac = m[3] ? +(m[3] + '000').slice(0, 3) : 0;
-    return mins * 60000 + secs * 1000 + frac;
+    const total = mins * 60000 + secs * 1000 + frac;
+    return total > 0 ? total : null;
   }
   m = s.match(/^(\d{1,3}(?:\.\d{1,3})?)$/);
   if (m) {
@@ -1108,7 +1352,7 @@ function todayISO() {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 function niceDate(iso) {
-  if (!iso) return '—';
+  if (!iso) return 'Date not recorded';
   const [y, m, d] = iso.split('-').map(Number);
   if (!y || !m || !d) return iso;
   const dt = new Date(y, m - 1, d);
@@ -1228,14 +1472,15 @@ function setGame(g) {
   $$('#f-game button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.game === g)));
   fillTracks();
   fillCars();
+  renderRecentCombos();
 }
 
 function fillTracks(preserve) {
   const sel = $('#f-track');
   const want = preserve || sel.value;
   const list = trackList(formGame);
-  sel.innerHTML = '<option value="">Select circuit…</option>' +
-    list.map(t => '<option value="' + esc(t.n) + '">' + esc(t.n) + (t.c ? ' — ' + esc(t.c) : '') + '</option>').join('');
+  $('#f-track-options').innerHTML = list.map(t => '<option value="' + esc(t.n) + '">' + esc(t.c) + '</option>').join('');
+  sel.value = '';
   if (want && list.some(t => t.n === want)) sel.value = want;
   else if (lastUsed.game === formGame && lastUsed.track && list.some(t => t.n === lastUsed.track)) sel.value = lastUsed.track;
 }
@@ -1247,10 +1492,9 @@ function fillCars(preserve) {
   const groups = {};
   list.forEach(c => { (groups[c.k] = groups[c.k] || []).push(c.n); });
   const keys = Object.keys(groups).sort();
-  sel.innerHTML = '<option value="">Select car…</option>' +
-    keys.map(k => '<optgroup label="' + esc(k) + '">' +
-      groups[k].map(n => '<option value="' + esc(n) + '">' + esc(n) + '</option>').join('') +
-      '</optgroup>').join('');
+  $('#f-car-options').innerHTML = keys.map(k =>
+    groups[k].map(n => '<option value="' + esc(n) + '">' + esc(k) + '</option>').join('')).join('');
+  sel.value = '';
   if (want && list.some(c => c.n === want)) sel.value = want;
   else if (lastUsed.game === formGame && lastUsed.car && list.some(c => c.n === lastUsed.car)) sel.value = lastUsed.car;
 }
@@ -1261,6 +1505,53 @@ function fillSessions() {
 function fillConditions() {
   $('#f-cond').innerHTML = CONDITIONS.map(c => '<option value="' + esc(c) + '">' + esc(c) + '</option>').join('');
 }
+
+function updateDetailsSummary() {
+  const date = $('#f-date').value;
+  $('#entry-details-summary').textContent = [$('#f-session').value, $('#f-cond').value,
+    date === todayISO() ? 'Today' : niceDate(date)].join(' · ');
+}
+
+let recentCombinations = [];
+function renderRecentCombos() {
+  const seen = new Set();
+  recentCombinations = state.laps.filter(l => l.game === formGame)
+    .sort((a, b) => b.created - a.created).filter(l => {
+      const key = comboKey(l);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).slice(0, 3);
+  $('#recent-combos').hidden = editingId !== null || !recentCombinations.length;
+  $('#recent-combos-list').innerHTML = recentCombinations.map((l, i) =>
+    '<button class="combo-btn" type="button" data-recent="' + i + '" aria-pressed="' +
+    String(l.track === $('#f-track').value && l.car === $('#f-car').value) + '">' +
+    '<strong>' + esc(l.track) + '</strong><small>' + esc(l.car) + '</small></button>').join('');
+  const ready = trackList(formGame).some(t => t.n === $('#f-track').value) && carList(formGame).some(c => c.n === $('#f-car').value);
+  $('#log-intro').textContent = ready
+    ? 'Your combination is ready. Enter a time, save it, and keep going.'
+    : 'Choose your circuit and car, then log your time. Your next lap starts with the same combination.';
+}
+
+$('#recent-combos-list').addEventListener('click', e => {
+  const button = e.target.closest('[data-recent]');
+  if (!button) return;
+  const lap = recentCombinations[Number(button.dataset.recent)];
+  $('#f-track').value = lap.track;
+  $('#f-car').value = lap.car;
+  $('#f-session').value = SESSIONS.includes(lap.session) ? lap.session : 'Practice';
+  $('#f-cond').value = CONDITIONS.includes(lap.cond) ? lap.cond : 'Dry';
+  updateDetailsSummary();
+  renderRecentCombos();
+  $('#f-time').focus();
+});
+
+['#f-track', '#f-car'].forEach(selector => $(selector).addEventListener('input', () => {
+  $(selector).removeAttribute('aria-invalid');
+  $(selector).classList.remove('is-bad');
+  renderRecentCombos();
+}));
+['#f-session', '#f-cond', '#f-date'].forEach(selector => $(selector).addEventListener('change', updateDetailsSummary));
 
 function updateTimeEcho() {
   const raw = $('#f-time').value;
@@ -1290,13 +1581,20 @@ function resetForm() {
   $('#f-time').value = '';
   $('#f-notes').value = '';
   $('#f-date').value = todayISO();
-  $('#f-session').value = 'Practice';
-  $('#f-cond').value = 'Dry';
+  $('#f-session').value = SESSIONS.includes(lastUsed.session) ? lastUsed.session : 'Practice';
+  $('#f-cond').value = CONDITIONS.includes(lastUsed.cond) ? lastUsed.cond : 'Dry';
+  $('#entry-details').open = false;
+  ['#f-track', '#f-car'].forEach(selector => {
+    $(selector).removeAttribute('aria-invalid');
+    $(selector).classList.remove('is-bad');
+  });
   $('#form-title').textContent = 'New entry';
   $('#form-mode').textContent = 'Adding';
   $('#f-submit').textContent = 'Add lap';
   $('#f-cancel').hidden = true;
   updateTimeEcho();
+  updateDetailsSummary();
+  renderRecentCombos();
 }
 
 function startEdit(id) {
@@ -1315,6 +1613,9 @@ function startEdit(id) {
   $('#form-mode').textContent = 'Changing';
   $('#f-submit').textContent = 'Save changes';
   $('#f-cancel').hidden = false;
+  $('#entry-details').open = true;
+  updateDetailsSummary();
+  renderRecentCombos();
   updateTimeEcho();
   showView('log');
   $('#f-time').focus();
@@ -1325,10 +1626,16 @@ $('#entry-form').addEventListener('submit', e => {
   e.preventDefault();
   const ms = parseTime($('#f-time').value);
   if (ms == null) { toast('Enter a lap time like 1:43.271', 'err'); $('#f-time').focus(); return; }
-  const track = $('#f-track').value;
-  const car = $('#f-car').value;
-  if (!track) { toast('Pick a circuit', 'err'); $('#f-track').focus(); return; }
-  if (!car) { toast('Pick a car', 'err'); $('#f-car').focus(); return; }
+  const track = trackList(formGame).find(t => t.n.toLowerCase() === $('#f-track').value.trim().toLowerCase())?.n;
+  const car = carList(formGame).find(c => c.n.toLowerCase() === $('#f-car').value.trim().toLowerCase())?.n;
+  if (!track || !car) {
+    const field = $(track ? '#f-car' : '#f-track');
+    field.setAttribute('aria-invalid', 'true');
+    field.classList.add('is-bad');
+    toast('Choose a ' + (track ? 'car' : 'circuit') + ' from the suggestions. Add new ones in Data.', 'err');
+    field.focus();
+    return;
+  }
 
   const payload = {
     game: formGame,
@@ -1338,7 +1645,7 @@ $('#entry-form').addEventListener('submit', e => {
     lapMs: ms,
     session: $('#f-session').value,
     cond: $('#f-cond').value,
-    date: $('#f-date').value || todayISO(),
+    date: $('#f-date').value,
     notes: $('#f-notes').value.trim()
   };
 
@@ -1351,16 +1658,24 @@ $('#entry-form').addEventListener('submit', e => {
     toast('Lap added — ' + fmtTime(ms));
   }
 
-  lastUsed = { game: formGame, track, car };
+  lastUsed = { game: formGame, track, car, session: payload.session, cond: payload.cond };
   save();
   const keepTrack = track, keepCar = car;
   resetForm();
   fillTracks(keepTrack);
   fillCars(keepCar);
   renderAll();
+  $('#f-time').focus();
 });
 
-$('#f-cancel').addEventListener('click', () => { resetForm(); fillTracks(); fillCars(); });
+$('#f-cancel').addEventListener('click', () => {
+  resetForm();
+  setGame(lastUsed.game);
+  fillTracks(lastUsed.track);
+  fillCars(lastUsed.car);
+  renderRecentCombos();
+  $('#f-time').focus();
+});
 
 $('#f-time').addEventListener('input', updateTimeEcho);
 $('#f-time').addEventListener('blur', () => {
@@ -1412,7 +1727,7 @@ function renderChrome() {
   $('#m-laps').textContent = n;
   $('#m-tracks').textContent = tracks;
   $('#m-best').textContent = best ? fmtTime(best.lapMs) : '—';
-  $('#m-last').textContent = last ? shortDate(last.date) : '—';
+  $('#m-last').textContent = last ? (shortDate(last.date) || 'Unknown') : '—';
 
   $('#rc-log').textContent = n || '';
   $('#rc-timing').textContent = tracks || '';
@@ -1431,15 +1746,47 @@ function renderChrome() {
 const ICON_EDIT = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M11.3 2.3 13.7 4.7 5.6 12.8 2.6 13.4l.6-3 8.1-8.1Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>';
 const ICON_DEL = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
+function fillLapFilters() {
+  const game = $('#lf-game').value;
+  const gameLaps = state.laps.filter(l => !game || l.game === game);
+  const fill = (selector, values, label) => {
+    const input = $(selector), current = input.value;
+    const options = Array.from(new Set(values)).filter(Boolean).sort();
+    input.innerHTML = '<option value="">' + label + '</option>' + options.map(value =>
+      '<option value="' + esc(value) + '">' + esc(value) + '</option>').join('');
+    if (options.includes(current)) input.value = current;
+  };
+  fill('#lf-track', gameLaps.map(l => l.track), 'All circuits');
+  const track = $('#lf-track').value;
+  fill('#lf-car', gameLaps.filter(l => !track || l.track === track).map(l => l.car), 'All cars');
+  fill('#lf-session', state.laps.map(l => l.session), 'All sessions');
+}
+
+function clearLapFilters() {
+  ['#lf-game', '#lf-track', '#lf-car', '#lf-session'].forEach(selector => $(selector).value = '');
+  $('#lf-sort').value = 'recent';
+  fillLapFilters();
+  renderLaps();
+}
+$('#lf-clear').addEventListener('click', clearLapFilters);
+
 function renderLaps() {
   const host = $('#laps-host');
   const fg = $('#lf-game').value;
   const fs = $('#lf-session').value;
+  const ft = $('#lf-track').value;
+  const fc = $('#lf-car').value;
   const sort = $('#lf-sort').value;
 
   let rows = state.laps.slice();
   if (fg) rows = rows.filter(l => l.game === fg);
   if (fs) rows = rows.filter(l => l.session === fs);
+  if (ft) rows = rows.filter(l => l.track === ft);
+  if (fc) rows = rows.filter(l => l.car === fc);
+  $('#lap-filters').hidden = !state.laps.length;
+  const active = [fg, fs, ft, fc].filter(Boolean).length;
+  $('#filter-count').textContent = active ? active + ' active · ' + rows.length + ' matched' : 'All laps';
+  $('#laps-note').textContent = rows.length === state.laps.length ? rows.length + ' entries' : rows.length + ' of ' + state.laps.length;
 
   if (sort === 'fast') rows.sort((a, b) => a.lapMs - b.lapMs);
   else if (sort === 'track') rows.sort((a, b) => a.track.localeCompare(b.track) || a.lapMs - b.lapMs);
@@ -1449,12 +1796,12 @@ function renderLaps() {
     host.innerHTML = '<div class="empty">' +
       '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.3"/><path d="M12 12V7M12 12l3.5 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>' +
       '<h3>No laps yet</h3>' +
-      '<p>Add your first lap above. Everything stays in this browser, so nothing leaves your machine.</p>' +
+      '<p>' + (cloudEnabled ? 'Add your first lap above. Your record saves privately to Cloudflare D1.' : 'Add your first lap above. Everything stays in this browser, so nothing leaves your machine.') + '</p>' +
       '</div>';
     return;
   }
   if (!rows.length) {
-    host.innerHTML = '<div class="empty"><h3>Nothing matches</h3><p>No laps match these filters. Try clearing them.</p></div>';
+    host.innerHTML = '<div class="empty"><h3>Nothing matches</h3><p>Try a different circuit or car, or clear your filters.</p><button class="btn" type="button" data-clear-filters>Clear filters</button></div>';
     return;
   }
 
@@ -1469,15 +1816,15 @@ function renderLaps() {
     det.push('<span>' + esc(niceDate(l.date)) + '</span>');
     if (l.cls) det.push('<span>' + esc(l.cls) + '</span>');
     if (l.notes) det.push('<span class="note">' + esc(l.notes) + '</span>');
-    return '<div class="lap" data-id="' + l.id + '">' +
+    return '<div class="lap" data-id="' + esc(l.id) + '">' +
       '<div class="lap-time' + (isPB ? ' is-pb' : '') + '">' + fmtTime(l.lapMs) + '</div>' +
       '<div class="lap-meta">' +
         '<div class="lap-track">' + esc(l.track) + '</div>' +
         '<div class="lap-car">' + esc(LIB[l.game].short) + ' · ' + esc(l.car) + '</div>' +
       '</div>' +
       '<div class="lap-actions">' +
-        '<button class="icon-btn" type="button" data-act="edit" data-id="' + l.id + '" aria-label="Edit lap">' + ICON_EDIT + '</button>' +
-        '<button class="icon-btn danger" type="button" data-act="del" data-id="' + l.id + '" aria-label="Delete lap">' + ICON_DEL + '</button>' +
+        '<button class="icon-btn" type="button" data-act="edit" data-id="' + esc(l.id) + '" aria-label="Edit lap">' + ICON_EDIT + '</button>' +
+        '<button class="icon-btn danger" type="button" data-act="del" data-id="' + esc(l.id) + '" aria-label="Delete lap">' + ICON_DEL + '</button>' +
       '</div>' +
       '<div class="lap-detail">' + det.join('') + '</div>' +
     '</div>';
@@ -1486,6 +1833,7 @@ function renderLaps() {
 }
 
 $('#laps-host').addEventListener('click', async e => {
+  if (e.target.closest('[data-clear-filters]')) { clearLapFilters(); $('#lf-clear').focus(); return; }
   const btn = e.target.closest('[data-act]');
   if (!btn) return;
   const id = btn.dataset.id;
@@ -1507,7 +1855,10 @@ $('#laps-host').addEventListener('click', async e => {
   }
 });
 
-['#lf-game', '#lf-session', '#lf-sort'].forEach(s => $(s).addEventListener('change', renderLaps));
+['#lf-game', '#lf-track', '#lf-car', '#lf-session', '#lf-sort'].forEach(s => $(s).addEventListener('change', () => {
+  fillLapFilters();
+  renderLaps();
+}));
 
 /* ============================================================
    RENDER — timing (personal bests)
@@ -1519,6 +1870,9 @@ function renderTiming() {
 
   let laps = state.laps.slice();
   if (fg) laps = laps.filter(l => l.game === fg);
+
+  const visibleCircuits = new Set(laps.map(lap => lap.game + '|' + lap.track)).size;
+  $('#timing-note').textContent = visibleCircuits + (visibleCircuits === 1 ? ' circuit' : ' circuits');
 
   if (!laps.length) {
     host.innerHTML = '<div class="empty">' +
@@ -1599,44 +1953,30 @@ function renderSummary() {
   const host = $('#summary-host');
   const n = state.laps.length;
   const tracks = new Set(state.laps.map(l => l.game + '|' + l.track)).size;
-  const days = new Set(state.laps.map(l => l.date)).size;
+  const days = new Set(state.laps.map(l => l.date).filter(Boolean)).size;
 
   if (!n) {
     $('#summary-note').textContent = 'no data';
-    host.innerHTML = ['Laps', 'Circuits', 'Sessions', 'Best'].map(k =>
+    host.innerHTML = ['Laps', 'Circuits', 'Combinations', 'Days logged'].map(k =>
       '<div class="stat"><dt>' + k + '</dt><dd class="sm">—</dd></div>').join('');
     return;
   }
 
-  const best = state.laps.reduce((a, b) => (b.lapMs < a.lapMs ? b : a));
-
-  // improvement: compare median of oldest third vs newest third
-  const chrono = state.laps.slice().sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.created - b.created);
-  let gainHtml = '<dd class="sm">—</dd>';
-  if (chrono.length >= 6) {
-    const third = Math.max(2, Math.floor(chrono.length / 3));
-    const early = median(chrono.slice(0, third).map(l => l.lapMs));
-    const late = median(chrono.slice(-third).map(l => l.lapMs));
-    const gain = early - late;
-    gainHtml = '<dd class="' + (gain > 0 ? 'green' : 'amber') + ' sm">' + fmtDelta(gain) + '</dd>';
-  }
-
-  $('#summary-note').textContent = days + (days === 1 ? ' day logged' : ' days logged');
+  $('#summary-note').textContent = days ? days + (days === 1 ? ' day with dates' : ' days with dates') : 'Dates not recorded';
+  const combinations = new Set(state.laps.map(comboKey)).size;
 
   host.innerHTML =
     '<div class="stat"><dt>Laps</dt><dd>' + n + '</dd></div>' +
     '<div class="stat"><dt>Circuits</dt><dd>' + tracks + '</dd></div>' +
-    '<div class="stat"><dt>Pace gained</dt>' + gainHtml + '</div>' +
-    '<div class="stat"><dt>Fastest ever</dt><dd class="purple sm">' + fmtTime(best.lapMs) + '</dd></div>';
+    '<div class="stat"><dt>Combinations</dt><dd>' + combinations + '</dd></div>' +
+    '<div class="stat"><dt>Days logged</dt><dd>' + days + '</dd></div>';
 }
 
 /* ---- progression chart ---- */
-let chartData = [];
-
 function chartSVG(laps, width) {
   const W = Math.max(280, width || 720);
   const H = W < 460 ? 220 : 260;
-  const PL = W < 460 ? 46 : 58;
+  const PL = 78;
   const PR = 14;
   const PT = 16;
   const PB = W < 460 ? 30 : 34;
@@ -1649,7 +1989,7 @@ function chartSVG(laps, width) {
   let min = Math.min(...ys), max = Math.max(...ys);
   if (min === max) { min -= 800; max += 800; }
   const padY = (max - min) * 0.14;
-  min -= padY; max += padY;
+  min = Math.max(0, min - padY); max += padY;
 
   const iw = W - PL - PR;
   const ih = H - PT - PB;
@@ -1662,7 +2002,7 @@ function chartSVG(laps, width) {
     const v = min + (i / ticks) * (max - min);
     const yy = y(v);
     g += '<line x1="' + PL + '" y1="' + yy.toFixed(1) + '" x2="' + (W - PR) + '" y2="' + yy.toFixed(1) + '" stroke="#242A32" stroke-width="1"/>';
-    g += '<text x="' + (PL - 8) + '" y="' + (yy + 3.5).toFixed(1) + '" text-anchor="end" fill="#6B7480" font-size="' + (W < 460 ? 9 : 10) + '" font-family="ui-monospace,monospace">' + fmtTime(Math.round(v)).replace(/^0:/, '') + '</text>';
+    g += '<text x="' + (PL - 8) + '" y="' + (yy + 3.5).toFixed(1) + '" text-anchor="end" fill="#868F9C" font-size="11" font-family="ui-monospace,monospace">' + fmtTime(Math.round(v)).replace(/^0:/, '') + '</text>';
   }
 
   // all laps polyline
@@ -1688,17 +2028,17 @@ function chartSVG(laps, width) {
     : [0, Math.floor((laps.length - 1) / 2), laps.length - 1];
   labelIdx.forEach((i, k) => {
     const anchor = k === 0 ? 'start' : (k === labelIdx.length - 1 && labelIdx.length > 1 ? 'end' : 'middle');
-    xl += '<text x="' + x(i).toFixed(1) + '" y="' + (H - 10) + '" text-anchor="' + anchor + '" fill="#4A525C" font-size="' + (W < 460 ? 9 : 10) + '" font-family="ui-monospace,monospace">' + esc(shortDate(laps[i].date)) + '</text>';
+    xl += '<text x="' + x(i).toFixed(1) + '" y="' + (H - 10) + '" text-anchor="' + anchor + '" fill="#868F9C" font-size="11" font-family="ui-monospace,monospace">' + esc(shortDate(laps[i].date)) + '</text>';
   });
 
   return '<div class="chart-wrap"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Lap time progression chart">' +
     g +
-    '<polyline points="' + pts + '" fill="none" stroke="#3C4650" stroke-width="1.4" stroke-linejoin="round"/>' +
+    '<polyline points="' + pts + '" fill="none" stroke="#A7B0BA" stroke-width="1.4" stroke-linejoin="round"/>' +
     '<polyline points="' + bestPts + '" fill="none" stroke="#B57BFF" stroke-width="2" stroke-linejoin="round" stroke-dasharray="4 3"/>' +
     dots + xl +
     '</svg></div>' +
     '<div class="chart-legend">' +
-      '<span><i style="width:14px;height:1.4px;background:#3B444F"></i>Each lap</span>' +
+      '<span><i style="width:14px;height:1.4px;background:#A7B0BA"></i>Each lap</span>' +
       '<span><i style="width:14px;height:2px;background:#B57BFF"></i>Best so far</span>' +
       '<span style="margin-left:auto">' + laps.length + (laps.length === 1 ? ' lap' : ' laps') + '</span>' +
     '</div>';
@@ -1727,19 +2067,25 @@ function fillChartFilters() {
   const cars = Array.from(new Set(state.laps.filter(l => l.game === g && l.track === track).map(l => l.car))).sort();
   const cs = $('#cf-car');
   const curC = cs.value;
-  cs.innerHTML = '<option value="">All cars</option>' +
-    cars.map(c => '<option value="' + esc(c) + '">' + esc(c) + '</option>').join('');
+  cs.innerHTML = cars.length ? cars.map(c => '<option value="' + esc(c) + '">' + esc(c) + '</option>').join('') : '<option value="">No cars yet</option>';
   if (cars.includes(curC)) cs.value = curC;
+
+  const conditions = Array.from(new Set(state.laps.filter(l => l.game === g && l.track === track && l.car === cs.value).map(l => l.cond))).sort();
+  const cond = $('#cf-cond'), current = cond.value;
+  cond.innerHTML = conditions.length ? conditions.map(value => '<option value="' + esc(value) + '">' + esc(value) + '</option>').join('') : '<option value="">No conditions yet</option>';
+  if (conditions.includes(current)) cond.value = current;
+  else if (conditions.includes('Dry')) cond.value = 'Dry';
 }
 
 function renderChart() {
   const g = $('#cf-game').value;
   const t = $('#cf-track').value;
   const c = $('#cf-car').value;
+  const condition = $('#cf-cond').value;
 
-  let laps = state.laps.filter(l => l.game === g && l.track === t);
-  if (c) laps = laps.filter(l => l.car === c);
+  let laps = state.laps.filter(l => l.game === g && l.track === t && l.car === c && l.cond === condition);
   laps.sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.created - b.created);
+  const datedLaps = laps.filter(l => /^\d{4}-\d{2}-\d{2}$/.test(l.date || ''));
 
   const host = $('#chart-host');
   if (!laps.length) {
@@ -1748,24 +2094,32 @@ function renderChart() {
   }
 
   const width = Math.max(280, host.clientWidth || 720);
-  let html = chartSVG(laps, width);
+  let html = datedLaps.length ? chartSVG(datedLaps, width) : '<div class="chart-empty">Add lap dates to see progression</div>';
 
   const best = Math.min(...laps.map(l => l.lapMs));
   const med = median(laps.map(l => l.lapMs));
   const spread = Math.max(...laps.map(l => l.lapMs)) - best;
-  const consistency = stdev(laps.map(l => l.lapMs));
+  let change = null;
+  let windowSize = 0;
+  if (datedLaps.length >= 6) {
+    windowSize = Math.floor(datedLaps.length / 3);
+    change = median(datedLaps.slice(-windowSize).map(l => l.lapMs)) - median(datedLaps.slice(0, windowSize).map(l => l.lapMs));
+  }
 
   html += '<dl class="stat-strip">' +
     '<div class="stat"><dt>Best</dt><dd class="purple sm">' + fmtTime(best) + '</dd></div>' +
     '<div class="stat"><dt>Median</dt><dd class="sm">' + fmtTime(Math.round(med)) + '</dd></div>' +
     '<div class="stat"><dt>Spread</dt><dd class="sm">' + fmtDelta(spread) + '</dd></div>' +
-    '<div class="stat"><dt>σ</dt><dd class="sm">±' + (consistency / 1000).toFixed(3) + '</dd></div>' +
-    '</dl>';
+    '<div class="stat"><dt>Median change</dt><dd class="sm ' + (change === null ? '' : change < 0 ? 'green' : change > 0 ? 'amber' : '') + '">' + (change === null ? (datedLaps.length ? 'Need 6 laps' : 'Add dates') : fmtDelta(change) + 's') + '</dd></div>' +
+    '</dl><p class="foot-note">' + (change === null
+      ? 'Log at least six dated laps with this car, circuit and conditions to compare your early and recent pace.'
+      : 'Median of the latest ' + windowSize + ' dated laps minus the earliest ' + windowSize + '. A negative change means faster laps. Same game, circuit, car and conditions; session types may differ.') +
+      (datedLaps.length < laps.length ? ' ' + (laps.length - datedLaps.length) + ((laps.length - datedLaps.length) === 1 ? ' undated lap is' : ' undated laps are') + ' included in Best, Median and Spread, but excluded from the timeline.' : '') + '</p>';
 
   host.innerHTML = html;
 }
 
-['#cf-game', '#cf-track', '#cf-car'].forEach(s => {
+['#cf-game', '#cf-track', '#cf-car', '#cf-cond'].forEach(s => {
   $(s).addEventListener('change', () => { fillChartFilters(); renderChart(); });
 });
 
@@ -1782,6 +2136,7 @@ function fillCmpCars() {
   if (cars.includes(cur)) sel.value = cur;
 }
 
+let comparisonRows = [];
 function renderCmp() {
   const host = $('#cmp-host');
   const g = $('#xf-game').value;
@@ -1798,8 +2153,8 @@ function renderCmp() {
 
   const byTrack = new Map();
   laps.forEach(l => {
-    const k = l.game + '|' + l.track;
-    if (!byTrack.has(k)) byTrack.set(k, { game: l.game, track: l.track, times: [] });
+    const k = JSON.stringify([l.game, l.track, l.car, l.cond]);
+    if (!byTrack.has(k)) byTrack.set(k, { game: l.game, track: l.track, car: l.car, cond: l.cond, times: [] });
     byTrack.get(k).times.push(l.lapMs);
   });
 
@@ -1807,26 +2162,44 @@ function renderCmp() {
     const best = Math.min(...r.times);
     const sd = stdev(r.times);
     return { ...r, best, sd, count: r.times.length, pct: sd / best };
-  }).sort((a, b) => a.pct - b.pct);
+  }).sort((a, b) => (a.count < 3) - (b.count < 3) || a.pct - b.pct);
+  comparisonRows = rows;
 
-  const maxPct = Math.max(...rows.map(r => r.pct), 0.0001);
+  const maxPct = Math.max(...rows.filter(r => r.count >= 3).map(r => r.pct), 0.0001);
 
-  $('#cmp-note').textContent = rows.length + (rows.length === 1 ? ' circuit' : ' circuits') + ' · tightest first';
+  $('#cmp-note').textContent = rows.length + (rows.length === 1 ? ' combination' : ' combinations');
 
-  host.innerHTML = '<div class="cmp">' + rows.map(r => {
+  host.innerHTML = '<div class="cmp">' + rows.map((r, index) => {
     const w = Math.max(2, (r.pct / maxPct) * 100);
     const cls = r.pct < 0.008 ? 'tight' : r.pct < 0.02 ? '' : 'loose';
-    return '<div class="cmp-row">' +
-      '<div class="cmp-name">' +
+    return '<button class="cmp-row" type="button" data-comparison-index="' + index + '" aria-label="View progression for ' + esc(r.track + ', ' + r.car + ', ' + LIB[r.game].short + ', ' + r.cond) + '">' +
+      '<span class="cmp-name">' +
         '<strong>' + esc(r.track) + '</strong>' +
-        '<em>' + esc(LIB[r.game].short) + ' · ' + r.count + (r.count === 1 ? ' lap' : ' laps') + ' · ±' + (r.sd / 1000).toFixed(3) + 's</em>' +
-      '</div>' +
-      '<div class="cmp-time">' + fmtTime(r.best) + '</div>' +
-      '<div class="cmp-bar"><i class="' + cls + '" style="width:' + w.toFixed(1) + '%"></i></div>' +
-    '</div>';
+        '<em>' + esc(LIB[r.game].short + ' · ' + r.car + ' · ' + r.cond) + '</em>' +
+        '<em>' + r.count + (r.count === 1 ? ' lap' : ' laps') + (r.count < 3 ? ' · need 3 for consistency' : ' · ±' + (r.sd / 1000).toFixed(3) + 's') + '</em>' +
+      '</span>' +
+      '<span class="cmp-time">' + fmtTime(r.best) + '<span class="cmp-link">View trend</span></span>' +
+      (r.count >= 3 ? '<span class="cmp-bar"><i class="' + cls + '" style="width:' + w.toFixed(1) + '%"></i></span>' : '') +
+    '</button>';
   }).join('') + '</div>' +
-  '<p class="foot-note">Bar length is lap-to-lap spread relative to your loosest circuit. Short green bars mean you can repeat the lap; long amber bars mean the pace is there but not yet repeatable.</p>';
+  '<p class="foot-note">Choose a combination to view its trend. Bars compare lap-to-lap spread as a percentage of your best, using the same car and conditions. Shorter bars mean less variation; at least three laps are needed.</p>';
 }
+
+$('#cmp-host').addEventListener('click', e => {
+  const button = e.target.closest('[data-comparison-index]');
+  if (!button) return;
+  const row = comparisonRows[Number(button.dataset.comparisonIndex)];
+  $('#cf-game').value = row.game;
+  fillChartFilters();
+  $('#cf-track').value = row.track;
+  fillChartFilters();
+  $('#cf-car').value = row.car;
+  fillChartFilters();
+  $('#cf-cond').value = row.cond;
+  showView('analysis');
+  $('#progression-panel').scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
+  $('#progression-title').focus({ preventScroll: true });
+});
 
 ['#xf-game', '#xf-car'].forEach(s => {
   $(s).addEventListener('change', () => { fillCmpCars(); renderCmp(); });
@@ -2000,9 +2373,9 @@ function ingestCSV(text) {
       car,
       cls: get('class') || carClass(game, car),
       lapMs: ms,
-      session: SESSIONS.includes(get('session')) ? get('session') : (get('session') || 'Practice'),
-      cond: get('conditions') || get('condition') || 'Dry',
-      date: /^\d{4}-\d{2}-\d{2}$/.test(get('date')) ? get('date') : todayISO(),
+      session: get('session') || 'Not recorded',
+      cond: get('conditions') || get('condition') || 'Not recorded',
+      date: /^\d{4}-\d{2}-\d{2}$/.test(get('date')) ? get('date') : '',
       notes: get('notes')
     });
     added++;
@@ -2033,9 +2406,9 @@ function ingestJSON(text) {
       car: l.car,
       cls: l.cls || carClass(l.game, l.car),
       lapMs: Math.round(l.lapMs),
-      session: l.session || 'Practice',
-      cond: l.cond || 'Dry',
-      date: l.date || todayISO(),
+      session: l.session || 'Not recorded',
+      cond: l.cond || 'Not recorded',
+      date: /^\d{4}-\d{2}-\d{2}$/.test(l.date || '') ? l.date : '',
       notes: l.notes || '',
       ...(l.sample ? { sample: true } : {})
     });
@@ -2145,7 +2518,7 @@ $('#btn-clear').addEventListener('click', async () => {
   if (!state.laps.length) { toast('Nothing to delete', 'warn'); return; }
   const ok = await ask({
     title: 'Delete everything',
-    body: 'This removes all <strong>' + state.laps.length + '</strong> laps from this browser. Export a backup first if you might want them back.',
+    body: 'This removes all <strong>' + state.laps.length + '</strong> laps ' + (cloudEnabled ? 'from your cloud record and this device.' : 'from this browser.') + ' Export a backup first if you might want them back.',
     ok: 'Delete all',
     danger: true
   });
@@ -2237,7 +2610,9 @@ window.addEventListener('resize', () => {
 
 function renderAll() {
   renderChrome();
+  fillLapFilters();
   renderLaps();
+  renderRecentCombos();
   renderTiming();
   renderSummary();
   fillChartFilters();
@@ -2245,12 +2620,6 @@ function renderAll() {
   fillCmpCars();
   renderCmp();
   renderStorage();
-  // keep session filter options in sync
-  const sf = $('#lf-session');
-  const cur = sf.value;
-  sf.innerHTML = '<option value="">All sessions</option>' +
-    SESSIONS.map(s => '<option value="' + esc(s) + '">' + esc(s) + '</option>').join('');
-  if (SESSIONS.includes(cur)) sf.value = cur;
 }
 
 function boot() {
@@ -2263,6 +2632,15 @@ function boot() {
   fillCars();
   resetForm();
   renderAll();
+  if (cloudEnabled) {
+    $('.rail-foot span').textContent = 'Private cloud record';
+    $('#v-data .view-head p').textContent = 'Your record saves to Cloudflare D1. Keep JSON exports as independent backups.';
+    $('#v-data .notice p').textContent = 'Only your allowed Cloudflare Access account can open this tracker. D1 keeps the cloud record; this browser keeps a local copy. Unsynced changes stay on this device until the cloud confirms a save.';
+    $('#entry-form > .entry-help:last-child').textContent = 'Enter saves a lap. N returns to the time field. The sync panel confirms when your changes reach the cloud.';
+    const lock = disabled => $$('#entry-form input, #entry-form select, #entry-form button, #btn-import, #btn-sample, #btn-clear, [data-add], [data-act]').forEach(control => { control.disabled = disabled; });
+    lock(true);
+    connectCloud().finally(() => lock(false));
+  }
 }
 
 boot();
